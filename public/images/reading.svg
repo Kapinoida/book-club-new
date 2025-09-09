@@ -1,0 +1,21 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="95" fill="#F3F4F6"/>
+  
+  <!-- Book -->
+  <path d="M50 60C50 55 54 50 60 50H140C146 50 150 55 150 60V140C150 145 146 150 140 150H60C54 150 50 145 50 140V60Z" fill="#E5E7EB"/>
+  <path d="M55 65V135C55 138 57 140 60 140H140C143 140 145 138 145 135V65C145 62 143 60 140 60H60C57 60 55 62 55 65Z" fill="white"/>
+  
+  <!-- Book pages -->
+  <rect x="65" y="70" width="70" height="2" rx="1" fill="#D1D5DB"/>
+  <rect x="65" y="80" width="70" height="2" rx="1" fill="#D1D5DB"/>
+  <rect x="65" y="90" width="70" height="2" rx="1" fill="#D1D5DB"/>
+  <rect x="65" y="100" width="50" height="2" rx="1" fill="#D1D5DB"/>
+  
+  <!-- Reading glasses -->
+  <circle cx="85" cy="120" r="12" stroke="#4B5563" stroke-width="3" fill="none"/>
+  <circle cx="115" cy="120" r="12" stroke="#4B5563" stroke-width="3" fill="none"/>
+  <path d="M97 120H103" stroke="#4B5563" stroke-width="3"/>
+  <path d="M73 120L65 123" stroke="#4B5563" stroke-width="3"/>
+  <path d="M127 120L135 123" stroke="#4B5563" stroke-width="3"/>
+</svg> 

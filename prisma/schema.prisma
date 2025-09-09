@@ -1,0 +1,139 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String    @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?   @db.Text
+  access_token      String?   @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?   @db.Text
+  session_state     String?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  created_at   DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String?   @unique
+  emailVerified  DateTime?
+  image          String?
+  username       String?   @unique
+  isAdmin        Boolean   @default(false)
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+  accounts       Account[]
+  sessions       Session[]
+  readingProgress ReadingProgress[]
+  comments       Comment[]
+
+  @@map("users")
+}
+
+model Book {
+  id          String   @id @default(cuid())
+  title       String
+  author      String
+  coverImage  String?
+  description String?  @db.Text
+  readMonth   DateTime
+  googleBooksId String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  readingProgress ReadingProgress[]
+  discussionQuestions DiscussionQuestion[]
+  comments    Comment[]
+
+  @@index([readMonth])
+  @@map("books")
+}
+
+model ReadingProgress {
+  id         String   @id @default(cuid())
+  userId     String
+  bookId     String
+  progress   Int      // Page number or percentage
+  isFinished Boolean  @default(false)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book       Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+  @@index([userId])
+  @@index([bookId])
+  @@map("reading_progress")
+}
+
+model DiscussionQuestion {
+  id         String   @id @default(cuid())
+  bookId     String
+  question   String   @db.Text
+  breakpoint Int      // Page number or percentage where this question becomes relevant
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  book       Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  comments   Comment[]
+
+  @@index([bookId])
+  @@map("discussion_questions")
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  content    String   @db.Text
+  userId     String
+  bookId     String
+  questionId String?
+  parentId   String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  flagged    Boolean  @default(false)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book       Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  question   DiscussionQuestion? @relation(fields: [questionId], references: [id], onDelete: SetNull)
+  parent     Comment?  @relation("CommentToComment", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies    Comment[] @relation("CommentToComment")
+
+  @@index([userId])
+  @@index([bookId])
+  @@index([questionId])
+  @@index([parentId])
+  @@map("comments")
+}
