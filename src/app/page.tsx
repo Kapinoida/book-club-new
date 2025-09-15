@@ -15,24 +15,15 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 async function getBooks(): Promise<Book[]> {
-  const startDate = new Date(2024, 1, 1); // February 2024
-  console.log("Start date:", startDate);
-
-  const books = await prisma.book.findMany({
-    where: {
-      readMonth: {
-        gte: startDate,
-      },
-    },
-    orderBy: {
-      readMonth: "asc",
-    },
-    distinct: ["title", "readMonth"],
-    take: 2,
-  });
-
-  console.log("Found books:", books);
-  return books;
+  try {
+    const books = await prisma.book.findMany({
+      orderBy: { readMonth: 'asc' }
+    });
+    return books;
+  } catch (error) {
+    console.error("Error fetching books:", error);
+    return [];
+  }
 }
 
 export default async function Home() {

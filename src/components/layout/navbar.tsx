@@ -50,6 +50,11 @@ export function Navbar() {
             <>
               <span className="text-sm text-muted-foreground">
                 {session.user.name}
+                {session.user.isAdmin && (
+                  <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    Admin
+                  </span>
+                )}
               </span>
               <Button
                 variant="ghost"
@@ -60,9 +65,18 @@ export function Navbar() {
               </Button>
             </>
           ) : (
-            <Button variant="ghost" onClick={() => signIn("google")}>
-              Sign in
-            </Button>
+            <>
+              <Button variant="ghost" asChild>
+                <Link href="/signin">
+                  Sign in
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/register">
+                  Sign up
+                </Link>
+              </Button>
+            </>
           )}
         </div>
       </div>

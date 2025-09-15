@@ -8,18 +8,7 @@ async function main() {
   await prisma.book.deleteMany();
   await prisma.user.deleteMany();
 
-  // Create admin user (use environment variable if available)
-  const adminEmail = process.env.ADMIN_EMAILS?.split(",")[0]?.trim() || "admin@bookclub.com";
-  const adminUser = await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: { isAdmin: true },
-    create: {
-      email: adminEmail,
-      name: "Admin User",
-      username: "admin",
-      isAdmin: true,
-    },
-  });
+  // Skip creating admin user - let NextAuth handle it during OAuth sign-in
 
   // Create current book (February 2024)
   const currentBook = await prisma.book.create({
@@ -81,7 +70,6 @@ async function main() {
   }
 
   console.log({
-    adminUser,
     currentBook,
     upcomingBook,
     questionsCreated: questions.length,

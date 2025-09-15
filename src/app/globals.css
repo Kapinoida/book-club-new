@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Force visible styles for debugging */
+body {
+  background-color: white !important;
+  color: black !important;
+}
+
+.test-bg-red {
+  background-color: red !important;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

@@ -1,0 +1,17 @@
+
+# Production Environment Variables
+# Add these to Vercel Dashboard -> Project Settings -> Environment Variables
+
+# Database
+DATABASE_URL="postgres://postgres.nbjdnzbhpbemkrwnzooo:jzpFmt70dGwBhG3z@aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require"
+
+# NextAuth
+NEXTAUTH_URL="https://your-vercel-domain.vercel.app"
+NEXTAUTH_SECRET="+zhyCNKTE9e5l7zII2ijyYpVE0lwYej9sduH+wN5Rtg="
+
+# Google OAuth (same as development)
+GOOGLE_CLIENT_ID="132852126628-63gvukshr3oi5ti5bbub6gd7qk3bkkv2.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="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"
+
+# Admin
+ADMIN_EMAILS="dcplaskett@gmail.com"

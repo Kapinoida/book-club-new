@@ -1,83 +1,87 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { NextAuthOptions } from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
 // List of admin email addresses
 const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map(email => email.trim()).filter(Boolean);
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    CredentialsProvider({
+      name: "credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" }
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
+
+        try {
+          // Check for admin login first
+          const isAdmin = adminEmails.includes(credentials.email);
+          const isValidAdminPassword = credentials.password === (process.env.ADMIN_PASSWORD || "bookclub123");
+
+          if (isAdmin && isValidAdminPassword) {
+            return {
+              id: credentials.email,
+              email: credentials.email,
+              name: "Admin User",
+              isAdmin: true,
+            };
+          }
+
+          // Check database for regular user
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email }
+          });
+
+          if (!user || !user.password) {
+            return null;
+          }
+
+          // Verify password
+          const isValidPassword = await bcrypt.compare(credentials.password, user.password);
+          
+          if (!isValidPassword) {
+            return null;
+          }
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            isAdmin: user.isAdmin,
+          };
+        } catch (error) {
+          console.error("Auth error:", error);
+          return null;
+        }
+      }
     }),
   ],
   callbacks: {
-    async signIn({ user, account, profile }) {
-      if (account?.provider === "google" && user.email) {
-        // Check if user should be admin based on email
-        const shouldBeAdmin = adminEmails.includes(user.email);
-        
-        // Update user admin status if needed
-        await prisma.user.upsert({
-          where: { email: user.email },
-          update: { isAdmin: shouldBeAdmin },
-          create: {
-            email: user.email,
-            name: user.name || "",
-            image: user.image,
-            isAdmin: shouldBeAdmin,
-          },
-        });
+    async jwt({ token, user }) {
+      if (user) {
+        token.isAdmin = user.isAdmin;
       }
-      return true;
+      return token;
     },
-    async session({ session, user }) {
+    async session({ session, token }) {
       if (session?.user) {
-        session.user.id = user.id;
-        const dbUser = await prisma.user.findUnique({
-          where: { id: user.id },
-          select: { isAdmin: true, username: true },
-        });
-        session.user.isAdmin = dbUser?.isAdmin ?? false;
-        session.user.username = dbUser?.username;
+        session.user.id = token.sub!;
+        session.user.isAdmin = token.isAdmin as boolean;
       }
       return session;
-    },
-    async redirect({ url, baseUrl }) {
-      // If the user is signing in and doesn't have a username, redirect to username setup
-      if (url.startsWith(baseUrl)) {
-        const session = await prisma.session.findFirst({
-          where: {
-            expires: {
-              gt: new Date(),
-            },
-          },
-          include: {
-            user: {
-              select: {
-                username: true,
-              },
-            },
-          },
-          orderBy: {
-            expires: "desc",
-          },
-        });
-
-        if (session && !session.user.username) {
-          return `${baseUrl}/setup-username`;
-        }
-      }
-      return url.startsWith(baseUrl) ? url : baseUrl;
     },
   },
   pages: {
     signIn: "/signin",
   },
   session: {
-    strategy: "database",
+    strategy: "jwt",
   },
 };
