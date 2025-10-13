@@ -21,20 +21,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          // Check for admin login first
-          const isAdmin = adminEmails.includes(credentials.email);
-          const isValidAdminPassword = credentials.password === (process.env.ADMIN_PASSWORD || "bookclub123");
-
-          if (isAdmin && isValidAdminPassword) {
-            return {
-              id: credentials.email,
-              email: credentials.email,
-              name: "Admin User",
-              isAdmin: true,
-            };
-          }
-
-          // Check database for regular user
+          // Check database for user
           const user = await prisma.user.findUnique({
             where: { email: credentials.email }
           });
@@ -45,7 +32,7 @@ export const authOptions: NextAuthOptions = {
 
           // Verify password
           const isValidPassword = await bcrypt.compare(credentials.password, user.password);
-          
+
           if (!isValidPassword) {
             return null;
           }
@@ -66,7 +53,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.isAdmin = user.isAdmin;
+        token.isAdmin = user.isAdmin ?? false;
       }
       return token;
     },

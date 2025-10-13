@@ -12,6 +12,11 @@ declare module "next-auth" {
       username?: string | null;
     };
   }
+
+  interface User {
+    isAdmin?: boolean;
+    username?: string | null;
+  }
 }
 
 declare module "next-auth/jwt" {

@@ -7,9 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { MemberGuard } from "@/components/auth/member-guard";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { ArrowLeft, MessageCircle, User, Clock } from "lucide-react";
+import { ArrowLeft, MessageCircle, User, Clock, Lock } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 
 interface DiscussionPageProps {
   params: {
@@ -22,14 +21,15 @@ interface DiscussionPageProps {
 
 export default function DiscussionPage({ params }: DiscussionPageProps) {
   const { data: session } = useSession();
-  const router = useRouter();
   const [responses, setResponses] = useState<any[]>([]);
   const [newResponse, setNewResponse] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [discussion, setDiscussion] = useState<any>(null);
   const [isLoadingDiscussion, setIsLoadingDiscussion] = useState(true);
-  
+  const [bookDiscussions, setBookDiscussions] = useState<any[]>([]);
+  const [unlockedDiscussions, setUnlockedDiscussions] = useState<string[]>([]);
+
   // Fetch discussion data
   useEffect(() => {
     const fetchDiscussion = async () => {
@@ -48,6 +48,34 @@ export default function DiscussionPage({ params }: DiscussionPageProps) {
 
     fetchDiscussion();
   }, [params.discussionId]);
+
+  // Fetch book discussions and user progress
+  useEffect(() => {
+    const fetchBookData = async () => {
+      if (!session) return;
+
+      try {
+        const [bookResponse, progressResponse] = await Promise.all([
+          fetch(`/api/books/${params.id}`),
+          fetch(`/api/books/${params.id}/progress`)
+        ]);
+
+        if (bookResponse.ok) {
+          const bookData = await bookResponse.json();
+          setBookDiscussions(bookData.discussions || []);
+        }
+
+        if (progressResponse.ok) {
+          const progressData = await progressResponse.json();
+          setUnlockedDiscussions(progressData.unlockedDiscussions || []);
+        }
+      } catch (error) {
+        console.error("Error fetching book data:", error);
+      }
+    };
+
+    fetchBookData();
+  }, [params.id, session]);
   
   // Check if discussion is unlocked
   useEffect(() => {
@@ -288,44 +316,61 @@ export default function DiscussionPage({ params }: DiscussionPageProps) {
         </div>
 
         {/* Navigation to other discussions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Other Discussion Questions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-2">
-              {[
-                { id: "1", breakpoint: 25, hasResponses: true },
-                { id: "2", breakpoint: 50, hasResponses: false },
-                { id: "3", breakpoint: 75, hasResponses: false },
-                { id: "4", breakpoint: 90, hasResponses: false }
-              ].filter(q => q.id !== discussion.id).map((question) => (
-                <Button
-                  key={question.id}
-                  variant="ghost"
-                  className="justify-start h-auto p-3"
-                  asChild
-                >
-                  <Link href={`/books/${params.id}/discussions/${question.id}`}>
-                    <div className="flex items-center space-x-3">
-                      <Badge variant="outline" className="flex-shrink-0">
-                        {question.breakpoint}%
-                      </Badge>
-                      <span className="text-left">
-                        Question {question.id}
-                      </span>
-                      {question.hasResponses && (
-                        <Badge variant="secondary" className="ml-auto">
-                          <MessageCircle className="h-3 w-3" />
-                        </Badge>
-                      )}
-                    </div>
-                  </Link>
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        {bookDiscussions.length > 1 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Other Discussion Questions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-2">
+                {bookDiscussions
+                  .filter(d => d.id !== discussion.id)
+                  .map((otherDiscussion) => {
+                    const isUnlocked = unlockedDiscussions.includes(otherDiscussion.id);
+
+                    return (
+                      <Button
+                        key={otherDiscussion.id}
+                        variant="ghost"
+                        className="justify-start h-auto p-3"
+                        asChild={isUnlocked}
+                        disabled={!isUnlocked}
+                      >
+                        {isUnlocked ? (
+                          <Link href={`/books/${params.id}/discussions/${otherDiscussion.id}`}>
+                            <div className="flex items-center space-x-3 w-full">
+                              <Badge variant="outline" className="flex-shrink-0">
+                                {otherDiscussion.breakpoint}%
+                              </Badge>
+                              <span className="text-left flex-1 line-clamp-1">
+                                {otherDiscussion.question}
+                              </span>
+                              {otherDiscussion.responseCount > 0 && (
+                                <Badge variant="secondary" className="flex-shrink-0">
+                                  <MessageCircle className="h-3 w-3 mr-1" />
+                                  {otherDiscussion.responseCount}
+                                </Badge>
+                              )}
+                            </div>
+                          </Link>
+                        ) : (
+                          <div className="flex items-center space-x-3 w-full opacity-60">
+                            <Badge variant="outline" className="flex-shrink-0">
+                              {otherDiscussion.breakpoint}%
+                            </Badge>
+                            <span className="text-left flex-1">
+                              Locked - Reach {otherDiscussion.breakpoint}% to unlock
+                            </span>
+                            <Lock className="h-4 w-4 flex-shrink-0" />
+                          </div>
+                        )}
+                      </Button>
+                    );
+                  })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </MemberGuard>
   );

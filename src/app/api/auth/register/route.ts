@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
+// List of admin email addresses
+const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map(email => email.trim()).filter(Boolean);
+
 export async function POST(request: NextRequest) {
   try {
     const { name, email, password } = await request.json();
@@ -45,13 +48,16 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
+    // Check if email is in admin list
+    const isAdmin = adminEmails.includes(email.toLowerCase());
+
     // Create user
     const user = await prisma.user.create({
       data: {
         name: name.trim(),
         email: email.toLowerCase(),
         password: hashedPassword,
-        isAdmin: false,
+        isAdmin,
       }
     });
 

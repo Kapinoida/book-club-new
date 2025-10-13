@@ -63,6 +63,7 @@ model User {
   sessions       Session[]
   readingProgress ReadingProgress[]
   comments       Comment[]
+  reviews        Review[]
 
   @@map("users")
 }
@@ -80,6 +81,7 @@ model Book {
   readingProgress ReadingProgress[]
   discussionQuestions DiscussionQuestion[]
   comments    Comment[]
+  reviews     Review[]
 
   @@index([readMonth])
   @@map("books")
@@ -137,4 +139,22 @@ model Comment {
   @@index([questionId])
   @@index([parentId])
   @@map("comments")
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  userId     String
+  bookId     String
+  rating     Int      // 1-5 stars
+  review     String?  @db.Text
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book       Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+  @@index([userId])
+  @@index([bookId])
+  @@index([rating])
+  @@map("reviews")
 }

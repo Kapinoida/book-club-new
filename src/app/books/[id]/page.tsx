@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MemberGuard } from "@/components/auth/member-guard";
 import { ReadingProgress } from "@/components/books/reading-progress";
+import { ReviewForm } from "@/components/reviews/review-form";
+import { ReviewList } from "@/components/reviews/review-list";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { ArrowLeft, Calendar, User, MessageCircle, Lock } from "lucide-react";
@@ -16,14 +18,36 @@ interface BookPageProps {
   };
 }
 
-// We'll fetch book data from the database in useEffect
+interface Discussion {
+  id: string;
+  question: string;
+  breakpoint: number;
+  responseCount: number;
+}
+
+interface BookData {
+  id: string;
+  title: string;
+  author: string;
+  description: string | null;
+  readMonth: string;
+  coverImage: string | null;
+  discussions: Discussion[];
+}
 
 export default function BookPage({ params }: BookPageProps) {
   const { data: session } = useSession();
   const [unlockedDiscussions, setUnlockedDiscussions] = useState<string[]>([]);
   const [isLoadingProgress, setIsLoadingProgress] = useState(true);
-  const [book, setBook] = useState<any>(null);
+  const [book, setBook] = useState<BookData | null>(null);
   const [isLoadingBook, setIsLoadingBook] = useState(true);
+  const [hasFinished, setHasFinished] = useState(false);
+  const [existingReview, setExistingReview] = useState<{
+    rating: number;
+    review: string | null;
+  } | null>(null);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewRefreshTrigger, setReviewRefreshTrigger] = useState(0);
 
   // Fetch book data
   useEffect(() => {
@@ -57,6 +81,7 @@ export default function BookPage({ params }: BookPageProps) {
         if (response.ok) {
           const data = await response.json();
           setUnlockedDiscussions(data.unlockedDiscussions);
+          setHasFinished(data.isFinished || false);
         }
       } catch (error) {
         console.error("Error fetching initial progress:", error);
@@ -68,8 +93,60 @@ export default function BookPage({ params }: BookPageProps) {
     fetchInitialProgress();
   }, [params.id, session]);
 
+  // Fetch existing review
+  useEffect(() => {
+    const fetchReview = async () => {
+      if (!session || !hasFinished) {
+        setShowReviewForm(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/books/${params.id}/reviews`);
+        if (response.ok) {
+          const data = await response.json();
+          const userReview = data.reviews.find(
+            (r: any) => r.user.id === session.user.id
+          );
+          if (userReview) {
+            setExistingReview({
+              rating: userReview.rating,
+              review: userReview.review,
+            });
+            setShowReviewForm(false); // Hide form if review exists
+          } else {
+            setShowReviewForm(true); // Show form if no review exists
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching review:", error);
+      }
+    };
+
+    fetchReview();
+  }, [params.id, session, hasFinished]);
+
   const handleProgressUpdate = (progress: number, unlocked: string[]) => {
     setUnlockedDiscussions(unlocked);
+    // Update finished status if progress reaches 100
+    if (progress >= 100) {
+      setHasFinished(true);
+    }
+  };
+
+  const handleReviewSubmitted = () => {
+    // Hide form and refresh review list
+    setShowReviewForm(false);
+    setReviewRefreshTrigger(prev => prev + 1);
+  };
+
+  const handleEditReview = (review: any) => {
+    // Set the existing review and show the form
+    setExistingReview({
+      rating: review.rating,
+      review: review.review,
+    });
+    setShowReviewForm(true);
   };
 
   if (isLoadingBook) {
@@ -124,7 +201,7 @@ export default function BookPage({ params }: BookPageProps) {
           <div className="md:col-span-1">
             <div className="aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden">
               <img
-                src={book.coverImage}
+                src={book.coverImage || '/placeholder-book-cover.jpg'}
                 alt={book.title}
                 className="w-full h-full object-cover"
               />
@@ -243,7 +320,7 @@ export default function BookPage({ params }: BookPageProps) {
                     <CardContent>
                       <div className="flex items-center justify-between">
                         <p className="text-sm text-muted-foreground">
-                          {discussion.responses.length} responses
+                          {discussion.responseCount} responses
                         </p>
                         {isUnlocked ? (
                           <Button variant="outline" size="sm" asChild>
@@ -273,6 +350,43 @@ export default function BookPage({ params }: BookPageProps) {
               </CardContent>
             </Card>
           )}
+        </div>
+
+        {/* Reviews Section */}
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold">Reviews</h2>
+
+          {showReviewForm ? (
+            <ReviewForm
+              bookId={params.id}
+              existingReview={existingReview || undefined}
+              onSuccess={handleReviewSubmitted}
+              onCancel={() => setShowReviewForm(false)}
+            />
+          ) : hasFinished && !existingReview ? (
+            <Card>
+              <CardContent className="py-6">
+                <p className="text-muted-foreground text-center">
+                  Loading...
+                </p>
+              </CardContent>
+            </Card>
+          ) : !hasFinished && session ? (
+            <Card>
+              <CardContent className="py-6">
+                <p className="text-muted-foreground text-center">
+                  Finish reading this book to leave a review
+                </p>
+              </CardContent>
+            </Card>
+          ) : null}
+
+          <ReviewList
+            bookId={params.id}
+            currentUserId={session?.user?.id}
+            refreshTrigger={reviewRefreshTrigger}
+            onEditReview={handleEditReview}
+          />
         </div>
       </div>
     </MemberGuard>

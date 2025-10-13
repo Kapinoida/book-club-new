@@ -107,8 +107,6 @@ export default async function CurrentBook() {
               )}
               <ReadingProgress
                 bookId={book.id}
-                initialProgress={progress?.progress ?? 0}
-                isFinished={progress?.isFinished ?? false}
               />
             </CardContent>
           </div>

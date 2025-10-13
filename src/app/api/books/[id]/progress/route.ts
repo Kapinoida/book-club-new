@@ -9,7 +9,7 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user || !session.user.email) {
       return NextResponse.json(
         { error: "Authentication required" },
@@ -30,7 +30,7 @@ export async function GET(
     }
 
     const bookId = params.id;
-    
+
     // Get reading progress from database
     const readingProgress = await prisma.readingProgress.findUnique({
       where: {
@@ -40,14 +40,19 @@ export async function GET(
         }
       }
     });
-    
+
     const progress = readingProgress?.progress || 0;
-    
-    return NextResponse.json({ 
+    const isFinished = readingProgress?.isFinished || false;
+
+    // Get unlocked discussions for this book
+    const unlockedDiscussions = await getUnlockedDiscussions(bookId, progress);
+
+    return NextResponse.json({
       bookId,
       userId: user.id,
       progress,
-      unlockedDiscussions: getUnlockedDiscussions(progress)
+      isFinished,
+      unlockedDiscussions
     });
   } catch (error) {
     console.error("Error fetching progress:", error);
@@ -107,7 +112,7 @@ export async function POST(
     
     const oldProgress = currentProgress?.progress || 0;
     const newProgress = Math.max(oldProgress, progress); // Only allow progress to increase
-    
+
     // Upsert reading progress
     const updatedProgress = await prisma.readingProgress.upsert({
       where: {
@@ -127,12 +132,13 @@ export async function POST(
         isFinished: newProgress >= 100
       }
     });
-    
-    const unlockedDiscussions = getUnlockedDiscussions(newProgress);
-    const previouslyUnlocked = getUnlockedDiscussions(oldProgress);
+
+    // Get unlocked discussions for this book
+    const unlockedDiscussions = await getUnlockedDiscussions(bookId, newProgress);
+    const previouslyUnlocked = await getUnlockedDiscussions(bookId, oldProgress);
     const newlyUnlocked = unlockedDiscussions.filter(d => !previouslyUnlocked.includes(d));
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       bookId,
       userId: user.id,
       progress: newProgress,
@@ -150,15 +156,20 @@ export async function POST(
 }
 
 // Helper function to determine which discussions are unlocked based on progress
-function getUnlockedDiscussions(progress: number): string[] {
-  const discussions = [
-    { id: "1", unlockAt: 25 },
-    { id: "2", unlockAt: 50 }, 
-    { id: "3", unlockAt: 75 },
-    { id: "4", unlockAt: 90 }
-  ];
-  
+async function getUnlockedDiscussions(bookId: string, progress: number): Promise<string[]> {
+  // Fetch all discussion questions for this book
+  const discussions = await prisma.discussionQuestion.findMany({
+    where: {
+      bookId: bookId
+    },
+    select: {
+      id: true,
+      breakpoint: true
+    }
+  });
+
+  // Filter discussions that should be unlocked based on user's progress
   return discussions
-    .filter(discussion => progress >= discussion.unlockAt)
+    .filter(discussion => progress >= discussion.breakpoint)
     .map(discussion => discussion.id);
 }

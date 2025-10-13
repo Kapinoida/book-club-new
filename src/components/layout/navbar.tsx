@@ -12,10 +12,11 @@ export function Navbar() {
 
   const navigation = [
     { name: "Home", href: "/" },
+    { name: "Archive", href: "/archive" },
     ...(session
       ? [
           { name: "Current Book", href: "/books/current" },
-          { name: "Archive", href: "/archive" },
+          { name: "Profile", href: "/profile" },
         ]
       : []),
     ...(session?.user.isAdmin ? [{ name: "Admin", href: "/admin" }] : []),

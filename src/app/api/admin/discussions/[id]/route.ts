@@ -3,6 +3,64 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user?.isAdmin) {
+      return NextResponse.json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
+    const discussion = await prisma.discussionQuestion.findUnique({
+      where: { id: params.id },
+      include: {
+        book: {
+          select: {
+            id: true,
+            title: true
+          }
+        },
+        _count: {
+          select: {
+            comments: true
+          }
+        }
+      }
+    });
+
+    if (!discussion) {
+      return NextResponse.json(
+        { error: "Discussion question not found" },
+        { status: 404 }
+      );
+    }
+
+    const formattedDiscussion = {
+      id: discussion.id,
+      bookId: discussion.bookId,
+      bookTitle: discussion.book.title,
+      question: discussion.question,
+      breakpoint: discussion.breakpoint,
+      responses: discussion._count.comments,
+      created_at: discussion.created_at
+    };
+
+    return NextResponse.json(formattedDiscussion);
+  } catch (error) {
+    console.error("Error fetching discussion:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -17,8 +75,8 @@ export async function PUT(
       );
     }
 
-    const { question, breakpoint } = await request.json();
-    
+    const { question, breakpoint, bookId } = await request.json();
+
     if (!question || !breakpoint) {
       return NextResponse.json(
         { error: "Question and breakpoint are required" },
@@ -44,11 +102,26 @@ export async function PUT(
       );
     }
 
+    // If bookId is provided, verify the book exists
+    if (bookId && bookId !== existingDiscussion.bookId) {
+      const book = await prisma.book.findUnique({
+        where: { id: bookId }
+      });
+
+      if (!book) {
+        return NextResponse.json(
+          { error: "Book not found" },
+          { status: 404 }
+        );
+      }
+    }
+
     const updatedDiscussion = await prisma.discussionQuestion.update({
       where: { id: params.id },
       data: {
         question: question.trim(),
         breakpoint: parseInt(breakpoint.toString()),
+        ...(bookId && { bookId }),
       },
       include: {
         book: {

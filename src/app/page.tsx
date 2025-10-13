@@ -9,15 +9,23 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
-async function getBooks(): Promise<Book[]> {
+async function getCurrentAndUpcomingBooks(): Promise<Book[]> {
   try {
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
     const books = await prisma.book.findMany({
-      orderBy: { readMonth: 'asc' }
+      where: {
+        readMonth: {
+          gte: currentMonthStart
+        }
+      },
+      orderBy: { readMonth: 'asc' },
+      take: 3 // Show up to 3 upcoming books
     });
     return books;
   } catch (error) {
@@ -28,7 +36,7 @@ async function getBooks(): Promise<Book[]> {
 
 export default async function Home() {
   const session = await getServerSession(authOptions);
-  const books = await getBooks();
+  const books = await getCurrentAndUpcomingBooks();
 
   return (
     <div className="container mx-auto py-8 space-y-8">
@@ -47,15 +55,22 @@ export default async function Home() {
           <CardTitle className="text-2xl">Current & Upcoming Books</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid md:grid-cols-2 gap-8">
-            {books.length > 0 ? (
-              books.map((book) => <BookCard key={book.id} book={book} />)
-            ) : (
-              <p className="text-muted-foreground">
-                No books found for the current month.
+          {books.length > 0 ? (
+            <div className="grid md:grid-cols-2 gap-8">
+              {books.map((book: Book) => <BookCard key={book.id} book={book} />)}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <div className="text-6xl">📚</div>
+              <h3 className="text-2xl font-semibold">Coming Soon</h3>
+              <p className="text-muted-foreground text-center max-w-md">
+                We're currently selecting our next book. Check back soon for the announcement!
               </p>
-            )}
-          </div>
+              <Link href="/archive">
+                <Button variant="outline">Browse Past Books</Button>
+              </Link>
+            </div>
+          )}
         </CardContent>
       </Card>
 

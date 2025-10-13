@@ -7,14 +7,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Search, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+interface GoogleBook {
+  id: string;
+  title: string;
+  authors: string[];
+  description: string;
+  coverImage: string;
+  publishedDate: string;
+  pageCount: number;
+  categories: string[];
+}
+
 export default function NewBook() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<GoogleBook[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
+  const [coverImageUrl, setCoverImageUrl] = useState("");
   const router = useRouter();
 
   const validateForm = (formData: FormData): Record<string, string> => {
@@ -69,12 +85,68 @@ export default function NewBook() {
     }
   };
 
+  const handleGoogleBooksSearch = async () => {
+    if (!searchQuery.trim()) {
+      toast.error('Please enter a search query');
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const response = await fetch(`/api/books/search?q=${encodeURIComponent(searchQuery)}`);
+
+      if (response.ok) {
+        const data = await response.json();
+        setSearchResults(data.books || []);
+        if (data.books?.length === 0) {
+          toast.info('No books found. Try a different search.');
+        }
+      } else if (response.status === 429) {
+        // Handle rate limiting
+        const error = await response.json();
+        const retryAfter = error.retryAfter || '60';
+        toast.error(`Rate limit exceeded. Please wait ${retryAfter} seconds and try again.`);
+      } else if (response.status === 504) {
+        toast.error('Request timed out. Please try again.');
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to search books');
+      }
+    } catch (error) {
+      toast.error('Network error. Please check your connection.');
+      console.error('Search error:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSelectBook = (book: GoogleBook) => {
+    // Auto-fill form with selected book data
+    const titleInput = document.getElementById('title') as HTMLInputElement;
+    const authorInput = document.getElementById('author') as HTMLInputElement;
+    const descriptionInput = document.getElementById('description') as HTMLTextAreaElement;
+    const coverImageInput = document.getElementById('coverImage') as HTMLInputElement;
+    const googleBooksIdInput = document.getElementById('googleBooksId') as HTMLInputElement;
+
+    if (titleInput) titleInput.value = book.title;
+    if (authorInput) authorInput.value = book.authors.join(', ');
+    if (descriptionInput) descriptionInput.value = book.description;
+    if (coverImageInput) coverImageInput.value = book.coverImage;
+    if (googleBooksIdInput) googleBooksIdInput.value = book.id;
+
+    setCoverImageUrl(book.coverImage);
+    setShowSearch(false);
+    setSearchResults([]);
+    setSearchQuery('');
+    toast.success('Book details filled in!');
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrors({});
-    
+
     const formData = new FormData(e.currentTarget);
-    
+
     // Validate form
     const validationErrors = validateForm(formData);
     if (Object.keys(validationErrors).length > 0) {
@@ -140,6 +212,78 @@ export default function NewBook() {
             </p>
           </div>
         </div>
+
+        {/* Google Books Search */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Search Google Books</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Find a book to auto-fill details
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Search by title, author, or ISBN..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleGoogleBooksSearch())}
+              />
+              <Button
+                type="button"
+                onClick={handleGoogleBooksSearch}
+                disabled={isSearching}
+              >
+                {isSearching ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Searching...
+                  </>
+                ) : (
+                  <>
+                    <Search className="h-4 w-4 mr-2" />
+                    Search
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Search Results */}
+            {searchResults.length > 0 && (
+              <div className="mt-4 space-y-2 max-h-96 overflow-y-auto">
+                {searchResults.map((book) => (
+                  <button
+                    key={book.id}
+                    type="button"
+                    onClick={() => handleSelectBook(book)}
+                    className="w-full text-left p-3 border rounded-lg hover:bg-accent transition-colors"
+                  >
+                    <div className="flex gap-3">
+                      {book.coverImage && (
+                        <img
+                          src={book.coverImage}
+                          alt={book.title}
+                          className="w-12 h-16 object-cover rounded"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{book.title}</p>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {book.authors.join(', ')}
+                        </p>
+                        {book.publishedDate && (
+                          <p className="text-xs text-muted-foreground">
+                            {book.publishedDate}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Form */}
         <Card>
@@ -209,12 +353,29 @@ export default function NewBook() {
                     type="url"
                     placeholder="https://example.com/cover.jpg"
                     className={errors.coverImage ? "border-red-500" : ""}
+                    value={coverImageUrl}
+                    onChange={(e) => setCoverImageUrl(e.target.value)}
                   />
                   {errors.coverImage && (
                     <p className="text-sm text-red-600">{errors.coverImage}</p>
                   )}
                 </div>
               </div>
+
+              {/* Cover Image Preview */}
+              {coverImageUrl && (
+                <div className="space-y-2">
+                  <Label>Cover Preview</Label>
+                  <div className="border rounded-lg p-4 bg-muted/30">
+                    <img
+                      src={coverImageUrl}
+                      alt="Book cover preview"
+                      className="h-48 w-auto mx-auto object-cover rounded"
+                      onError={() => setCoverImageUrl('')}
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="googleBooksId">Google Books ID (Optional)</Label>

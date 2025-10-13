@@ -39,14 +39,9 @@ export async function GET(
         id: question.id,
         question: question.question,
         breakpoint: question.breakpoint,
-        responses: [] // We'll populate this from the count
+        responseCount: question._count.comments
       }))
     };
-
-    // Add response counts
-    formattedBook.discussions.forEach((discussion, index) => {
-      discussion.responses = new Array(book.discussionQuestions[index]._count.comments).fill({});
-    });
 
     return NextResponse.json(formattedBook);
   } catch (error) {
