@@ -13,6 +13,7 @@ export function Navbar() {
   const navigation = [
     { name: "Home", href: "/" },
     { name: "Archive", href: "/archive" },
+    { name: "Polls", href: "/polls" },
     ...(session
       ? [
           { name: "Current Book", href: "/books/current" },

@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user?.isAdmin) {
       return NextResponse.json(
         { error: "Admin access required" },
@@ -14,8 +14,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { title, author, description, readMonth, coverImage, googleBooksId } = await request.json();
-    
+    const { title, author, description, readMonth, coverImage, googleBooksId, status } = await request.json();
+
     if (!title || !author) {
       return NextResponse.json(
         { error: "Title and author are required" },
@@ -28,9 +28,10 @@ export async function POST(request: NextRequest) {
         title: title.trim(),
         author: author.trim(),
         description: description?.trim() || "",
-        readMonth: readMonth ? new Date(readMonth + '-01T12:00:00.000Z') : new Date(),
+        readMonth: readMonth ? new Date(readMonth + '-01T12:00:00.000Z') : null,
         coverImage: coverImage?.trim() || "",
         googleBooksId: googleBooksId?.trim() || "",
+        status: status || "DRAFT",
       },
     });
 
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user?.isAdmin) {
       return NextResponse.json(
         { error: "Admin access required" },
@@ -55,19 +56,31 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const { searchParams } = new URL(request.url);
+    const statusFilter = searchParams.get("status");
+
+    const whereClause = statusFilter
+      ? {
+          status: {
+            in: statusFilter.split(",") as any[],
+          },
+        }
+      : {};
+
     const books = await prisma.book.findMany({
+      where: whereClause,
       include: {
         _count: {
-          select: { 
+          select: {
             discussionQuestions: true,
-            readingProgress: true
-          }
-        }
+            readingProgress: true,
+          },
+        },
       },
-      orderBy: { readMonth: 'desc' }
+      orderBy: { created_at: "desc" },
     });
 
-    return NextResponse.json(books);
+    return NextResponse.json({ books });
   } catch (error) {
     console.error("Error fetching books:", error);
     return NextResponse.json(

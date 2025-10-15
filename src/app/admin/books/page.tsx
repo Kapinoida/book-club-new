@@ -19,8 +19,8 @@ export default function ManageBooks() {
       try {
         const response = await fetch('/api/admin/books');
         if (response.ok) {
-          const booksData = await response.json();
-          setBooks(booksData);
+          const data = await response.json();
+          setBooks(data.books || data);
         } else {
           toast.error('Failed to fetch books');
         }
@@ -58,7 +58,7 @@ export default function ManageBooks() {
         const booksResponse = await fetch('/api/admin/books');
         if (booksResponse.ok) {
           const booksData = await booksResponse.json();
-          setBooks(booksData);
+          setBooks(booksData.books || booksData);
         }
       } else {
         const error = await response.json();
@@ -163,10 +163,15 @@ export default function ManageBooks() {
                 <CardTitle className="text-lg">{book.title}</CardTitle>
                 <p className="text-sm text-muted-foreground">by {book.author}</p>
                 <p className="text-xs text-muted-foreground">
-                  Reading: {new Date(book.readMonth).toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'long' 
-                  })}
+                  {book.readMonth
+                    ? `Reading: ${new Date(book.readMonth).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long'
+                      })}`
+                    : book.status === 'POLL_CANDIDATE'
+                      ? 'Status: Available for polls'
+                      : `Status: ${book.status}`
+                  }
                 </p>
               </CardHeader>
               <CardContent>

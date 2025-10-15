@@ -214,10 +214,11 @@ export default function EditDiscussion({ params }: EditDiscussionProps) {
                   <SelectContent>
                     {books.map((book) => (
                       <SelectItem key={book.id} value={book.id}>
-                        {book.title} - {new Date(book.readMonth).toLocaleDateString('en-US', {
+                        {book.title}
+                        {book.readMonth && ` - ${new Date(book.readMonth).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long'
-                        })}
+                        })}`}
                       </SelectItem>
                     ))}
                   </SelectContent>

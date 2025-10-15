@@ -22,6 +22,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "compressed.photo.goodreads.com",
       },
+      {
+        protocol: "https",
+        hostname: "books.google.com",
+      },
     ],
   },
 };

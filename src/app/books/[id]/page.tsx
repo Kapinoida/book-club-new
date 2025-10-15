@@ -215,13 +215,15 @@ export default function BookPage({ params }: BookPageProps) {
                 <User className="h-4 w-4" />
                 <span>by {book.author}</span>
               </div>
-              <div className="flex items-center space-x-2 text-muted-foreground mb-6">
-                <Calendar className="h-4 w-4" />
-                <span>Reading in {new Date(book.readMonth).toLocaleDateString('en-US', { 
-                  year: 'numeric', 
-                  month: 'long' 
-                })}</span>
-              </div>
+              {book.readMonth && (
+                <div className="flex items-center space-x-2 text-muted-foreground mb-6">
+                  <Calendar className="h-4 w-4" />
+                  <span>Reading in {new Date(book.readMonth).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long'
+                  })}</span>
+                </div>
+              )}
             </div>
 
             <div>

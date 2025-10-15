@@ -175,10 +175,11 @@ export default function NewDiscussion() {
                   <SelectContent>
                     {books.map((book) => (
                       <SelectItem key={book.id} value={book.id}>
-                        {book.title} - {new Date(book.readMonth).toLocaleDateString('en-US', { 
-                          year: 'numeric', 
-                          month: 'long' 
-                        })}
+                        {book.title}
+                        {book.readMonth && ` - ${new Date(book.readMonth).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long'
+                        })}`}
                       </SelectItem>
                     ))}
                   </SelectContent>

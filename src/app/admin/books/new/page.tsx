@@ -57,13 +57,12 @@ export default function NewBook() {
       errors.author = 'Author name must be less than 100 characters';
     }
 
-    if (!readMonth) {
-      errors.readMonth = 'Reading month is required';
-    } else {
+    // Reading month is now optional
+    if (readMonth) {
       const selectedDate = new Date(readMonth);
       const currentDate = new Date();
       currentDate.setDate(1); // Set to first day of current month
-      
+
       if (selectedDate < currentDate) {
         errors.readMonth = 'Reading month cannot be in the past';
       }
@@ -157,13 +156,17 @@ export default function NewBook() {
 
     setIsSubmitting(true);
 
+    const readMonth = formData.get('readMonth') as string;
+    const status = formData.get('status') as string;
+
     const bookData = {
       title: (formData.get('title') as string).trim(),
       author: (formData.get('author') as string).trim(),
       description: (formData.get('description') as string || '').trim(),
-      readMonth: formData.get('readMonth') as string,
+      readMonth: readMonth || undefined,
       coverImage: (formData.get('coverImage') as string || '').trim(),
       googleBooksId: (formData.get('googleBooksId') as string || '').trim(),
+      status: status || 'DRAFT',
     };
 
     try {
@@ -333,33 +336,52 @@ export default function NewBook() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="readMonth">Reading Month *</Label>
+                  <Label htmlFor="status">Book Status</Label>
+                  <select
+                    id="status"
+                    name="status"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="DRAFT">Draft (Not scheduled)</option>
+                    <option value="POLL_CANDIDATE">Available for Polls</option>
+                    <option value="SCHEDULED">Scheduled</option>
+                    <option value="CURRENT">Current</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground">
+                    Mark as "Available for Polls" to include in voting
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="readMonth">Reading Month (Optional)</Label>
                   <Input
                     id="readMonth"
                     name="readMonth"
                     type="month"
                     className={errors.readMonth ? "border-red-500" : ""}
-                    required
                   />
                   {errors.readMonth && (
                     <p className="text-sm text-red-600">{errors.readMonth}</p>
                   )}
+                  <p className="text-xs text-muted-foreground">
+                    Leave blank for poll candidates
+                  </p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="coverImage">Cover Image URL</Label>
-                  <Input
-                    id="coverImage"
-                    name="coverImage"
-                    type="url"
-                    placeholder="https://example.com/cover.jpg"
-                    className={errors.coverImage ? "border-red-500" : ""}
-                    value={coverImageUrl}
-                    onChange={(e) => setCoverImageUrl(e.target.value)}
-                  />
-                  {errors.coverImage && (
-                    <p className="text-sm text-red-600">{errors.coverImage}</p>
-                  )}
-                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="coverImage">Cover Image URL</Label>
+                <Input
+                  id="coverImage"
+                  name="coverImage"
+                  type="url"
+                  placeholder="https://example.com/cover.jpg"
+                  className={errors.coverImage ? "border-red-500" : ""}
+                  value={coverImageUrl}
+                  onChange={(e) => setCoverImageUrl(e.target.value)}
+                />
+                {errors.coverImage && (
+                  <p className="text-sm text-red-600">{errors.coverImage}</p>
+                )}
               </div>
 
               {/* Cover Image Preview */}

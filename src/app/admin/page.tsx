@@ -161,10 +161,15 @@ export default async function AdminDashboard() {
                         </p>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {book.readMonth.toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short'
-                        })}
+                        {book.readMonth
+                          ? new Date(book.readMonth).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short'
+                            })
+                          : book.status === 'POLL_CANDIDATE'
+                            ? 'Available for polls'
+                            : 'No date set'
+                        }
                       </div>
                     </Link>
                   ))
@@ -221,6 +226,9 @@ export default async function AdminDashboard() {
             <div className="flex flex-wrap gap-4">
               <Button asChild>
                 <Link href="/admin/books">Manage Books</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/admin/polls">Manage Polls</Link>
               </Button>
               <Button asChild variant="outline">
                 <Link href="/admin/users">Manage Users</Link>

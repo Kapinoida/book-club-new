@@ -58,13 +58,15 @@ export function BookCard({ book, showReadingProgress = false }: BookCardProps) {
         <CardDescription>by {book.author}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
-        <p className="text-sm text-muted-foreground">
-          Reading in{" "}
-          {new Date(book.readMonth).toLocaleDateString("en-US", {
-            month: "long",
-            year: "numeric",
-          })}
-        </p>
+        {book.readMonth && (
+          <p className="text-sm text-muted-foreground">
+            Reading in{" "}
+            {new Date(book.readMonth).toLocaleDateString("en-US", {
+              month: "long",
+              year: "numeric",
+            })}
+          </p>
+        )}
         {book.description && (
           <p className="text-sm line-clamp-3">{book.description}</p>
         )}
