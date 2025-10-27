@@ -37,6 +37,8 @@ export function CommentThread({
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyContent, setReplyContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(comment.content);
 
   const maxDepth = 3; // Maximum nesting level
   const canReply = depth < maxDepth;
@@ -51,6 +53,37 @@ export function CommentThread({
       setShowReplyForm(false);
     } catch (error) {
       console.error("Error submitting reply:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditSubmit = async () => {
+    if (!editContent.trim() || isSubmitting) return;
+    if (editContent.trim() === comment.content) {
+      setIsEditing(false);
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`/api/comments/${comment.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ content: editContent })
+      });
+
+      if (response.ok) {
+        setIsEditing(false);
+        // Update local content
+        comment.content = editContent;
+      } else {
+        console.error("Failed to update comment");
+      }
+    } catch (error) {
+      console.error("Error updating comment:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -81,8 +114,12 @@ export function CommentThread({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {currentUserEmail === comment.author.email && (
-                <Button variant="ghost" size="sm">
+              {currentUserEmail === comment.author.email && !isEditing && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsEditing(true)}
+                >
                   Edit
                 </Button>
               )}
@@ -90,12 +127,46 @@ export function CommentThread({
           </div>
         </CardHeader>
         <CardContent>
-          <p className="leading-relaxed mb-4">{comment.content}</p>
+          {isEditing ? (
+            <div className="space-y-3 mb-4">
+              <Textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                rows={4}
+                disabled={isSubmitting}
+                className="bg-background"
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleEditSubmit}
+                  disabled={!editContent.trim() || isSubmitting}
+                >
+                  {isSubmitting ? "Saving..." : "Save"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setEditContent(comment.content);
+                  }}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <p className="leading-relaxed mb-4">{comment.content}</p>
+          )}
 
           {/* Reactions */}
-          <div className="mb-3">
-            <Reactions commentId={comment.id} />
-          </div>
+          {!isEditing && (
+            <div className="mb-3">
+              <Reactions commentId={comment.id} />
+            </div>
+          )}
 
           {canReply && (
             <div className="flex items-center gap-2">
