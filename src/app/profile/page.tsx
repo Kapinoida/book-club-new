@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/reviews/star-rating";
 import { ReadingStats } from "@/components/charts/reading-stats";
+import { BadgeCollection } from "@/components/badges/badge-collection";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -189,6 +190,9 @@ export default function ProfilePage() {
             : 0
         }
       />
+
+      {/* Badges */}
+      <BadgeCollection />
 
       {/* Currently Reading */}
       {profileData.currentBooks.length > 0 && (
