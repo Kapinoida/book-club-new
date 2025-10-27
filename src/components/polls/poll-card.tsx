@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Calendar, Trophy, Users } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface PollCandidate {
   id: string;
@@ -60,6 +61,9 @@ export function PollCard({ poll, isLoggedIn }: PollCardProps) {
     if (!isLoggedIn || !isPollOpen) return;
 
     setIsVoting(true);
+    const voteId = `vote-${poll.id}-${bookId}`;
+    toast.loading("Submitting your vote...", { id: voteId });
+
     try {
       const response = await fetch(`/api/polls/${poll.id}/vote`, {
         method: "POST",
@@ -70,14 +74,15 @@ export function PollCard({ poll, isLoggedIn }: PollCardProps) {
       });
 
       if (response.ok) {
+        toast.success("Vote recorded successfully!", { id: voteId });
         router.refresh();
       } else {
         const data = await response.json();
-        alert(data.error || "Failed to vote");
+        toast.error(data.error || "Failed to vote", { id: voteId });
       }
     } catch (error) {
       console.error("Error voting:", error);
-      alert("Failed to vote");
+      toast.error("Failed to vote", { id: voteId });
     } finally {
       setIsVoting(false);
     }
@@ -102,19 +107,34 @@ export function PollCard({ poll, isLoggedIn }: PollCardProps) {
             {isPollOpen ? "Open" : isPollClosed ? "Closed" : "Upcoming"}
           </Badge>
         </div>
-        <div className="flex gap-4 text-sm text-muted-foreground pt-2">
+        <div className="flex flex-col gap-2 text-sm text-muted-foreground pt-2">
+          <div className="flex gap-4">
+            <div className="flex items-center gap-1">
+              <Calendar className="h-4 w-4" />
+              <span>
+                For {new Date(poll.forMonth).toLocaleDateString("en-US", {
+                  month: "long",
+                  year: "numeric",
+                })}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Users className="h-4 w-4" />
+              <span>{totalVotes} votes</span>
+            </div>
+          </div>
           <div className="flex items-center gap-1">
             <Calendar className="h-4 w-4" />
             <span>
-              {new Date(poll.forMonth).toLocaleDateString("en-US", {
-                month: "long",
+              Poll open: {startDate.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })} - {endDate.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
                 year: "numeric",
               })}
             </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Users className="h-4 w-4" />
-            <span>{totalVotes} votes</span>
           </div>
         </div>
       </CardHeader>
@@ -136,7 +156,9 @@ export function PollCard({ poll, isLoggedIn }: PollCardProps) {
             return (
               <Card
                 key={candidate.id}
-                className={`relative ${hasVoted ? "ring-2 ring-primary" : ""}`}
+                className={`relative transition-all duration-200 ${
+                  hasVoted ? "ring-2 ring-primary shadow-md" : "hover:shadow-sm"
+                }`}
               >
                 <CardContent className="p-4">
                   <div className="flex gap-4">
@@ -195,8 +217,9 @@ export function PollCard({ poll, isLoggedIn }: PollCardProps) {
                               variant={hasVoted ? "secondary" : "outline"}
                               onClick={() => handleVote(candidate.bookId)}
                               disabled={isVoting}
+                              className="transition-all"
                             >
-                              {hasVoted ? "Voted" : "Vote"}
+                              {isVoting ? "Voting..." : hasVoted ? "Voted ✓" : "Vote"}
                             </Button>
                           )}
                         </div>

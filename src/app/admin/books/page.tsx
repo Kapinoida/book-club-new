@@ -181,10 +181,15 @@ export default function ManageBooks() {
 
                 {/* Question Count Badge */}
                 <div className="mb-3">
-                  <Badge variant={book._count?.discussionQuestions > 0 ? "default" : "secondary"}>
-                    <MessageCircle className="h-3 w-3 mr-1" />
-                    {book._count?.discussionQuestions || 0} questions
-                  </Badge>
+                  <Link 
+                    href={`/books/${book.id}#discussions`}
+                    className="cursor-pointer hover:opacity-80 transition-opacity inline-block"
+                  >
+                    <Badge variant={book._count?.discussionQuestions > 0 ? "default" : "secondary"}>
+                      <MessageCircle className="h-3 w-3 mr-1" />
+                      {book._count?.discussionQuestions || 0} questions
+                    </Badge>
+                  </Link>
                 </div>
 
                 <div className="space-y-2">

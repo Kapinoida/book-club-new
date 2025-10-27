@@ -54,6 +54,7 @@ async function getRecentActivity() {
           title: true,
           author: true,
           readMonth: true,
+          status: true,
           created_at: true,
         },
       }),

@@ -84,7 +84,9 @@ export async function GET(request: NextRequest) {
     // Clean up old cache entries (keep cache size reasonable)
     if (searchCache.size > 100) {
       const oldestKey = searchCache.keys().next().value;
-      searchCache.delete(oldestKey);
+      if (oldestKey) {
+        searchCache.delete(oldestKey);
+      }
     }
 
     return NextResponse.json(result);

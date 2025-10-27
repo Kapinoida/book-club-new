@@ -252,13 +252,15 @@ export default function BookPage({ params }: BookPageProps) {
         />
 
         {/* Discussion Questions */}
-        <div className="space-y-6">
+        <div className="space-y-6" id="discussions">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">Discussion Questions</h2>
-            <Badge variant="secondary">
-              <MessageCircle className="h-3 w-3 mr-1" />
-              {book.discussions.length} questions
-            </Badge>
+            <Link href="#discussions" className="cursor-pointer hover:opacity-80 transition-opacity">
+              <Badge variant="secondary">
+                <MessageCircle className="h-3 w-3 mr-1" />
+                {book.discussions.length} questions
+              </Badge>
+            </Link>
           </div>
 
           {isLoadingProgress ? (

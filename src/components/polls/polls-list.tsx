@@ -65,13 +65,19 @@ export function PollsList({ polls, isLoggedIn }: PollsListProps) {
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="active" className="space-y-6">
+      <TabsContent value="active" className="space-y-6 animate-in fade-in-50 duration-300">
         {activePolls.length > 0 ? (
-          activePolls.map((poll) => (
-            <PollCard key={poll.id} poll={poll} isLoggedIn={isLoggedIn} />
+          activePolls.map((poll, index) => (
+            <div
+              key={poll.id}
+              className="animate-in fade-in-50 slide-in-from-bottom-4"
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              <PollCard poll={poll} isLoggedIn={isLoggedIn} />
+            </div>
           ))
         ) : (
-          <Card>
+          <Card className="animate-in fade-in-50">
             <CardContent className="py-12 text-center">
               <h3 className="text-xl font-semibold mb-2">No Active Polls</h3>
               <p className="text-muted-foreground">
@@ -82,13 +88,19 @@ export function PollsList({ polls, isLoggedIn }: PollsListProps) {
         )}
       </TabsContent>
 
-      <TabsContent value="past" className="space-y-6">
+      <TabsContent value="past" className="space-y-6 animate-in fade-in-50 duration-300">
         {pastPolls.length > 0 ? (
-          pastPolls.map((poll) => (
-            <PollCard key={poll.id} poll={poll} isLoggedIn={isLoggedIn} />
+          pastPolls.map((poll, index) => (
+            <div
+              key={poll.id}
+              className="animate-in fade-in-50 slide-in-from-bottom-4"
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              <PollCard poll={poll} isLoggedIn={isLoggedIn} />
+            </div>
           ))
         ) : (
-          <Card>
+          <Card className="animate-in fade-in-50">
             <CardContent className="py-12 text-center">
               <h3 className="text-xl font-semibold mb-2">No Past Polls</h3>
               <p className="text-muted-foreground">

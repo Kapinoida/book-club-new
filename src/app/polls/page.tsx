@@ -51,7 +51,13 @@ async function getPolls(userId?: string) {
       },
     });
 
-    return polls;
+    // Convert Date objects to ISO strings for client components
+    return polls.map(poll => ({
+      ...poll,
+      startDate: poll.startDate.toISOString(),
+      endDate: poll.endDate.toISOString(),
+      forMonth: poll.forMonth.toISOString(),
+    }));
   } catch (error) {
     console.error("Error fetching polls:", error);
     return [];

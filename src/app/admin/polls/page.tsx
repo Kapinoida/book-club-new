@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import { Calendar, Users, Trophy, Plus, Lock, X, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 interface Poll {
   id: string;
@@ -82,6 +83,8 @@ export default function AdminPollsPage() {
     }
 
     setClosingPollId(pollId);
+    toast.loading("Closing poll...", { id: `close-${pollId}` });
+
     try {
       const response = await fetch(`/api/polls/${pollId}/close`, {
         method: "POST",
@@ -89,15 +92,15 @@ export default function AdminPollsPage() {
 
       if (response.ok) {
         const data = await response.json();
-        alert(`Poll closed! Winner: ${data.winner.book.title}`);
+        toast.success(`Poll closed! Winner: ${data.winner.book.title}`, { id: `close-${pollId}` });
         fetchPolls();
       } else {
         const error = await response.json();
-        alert(error.error || "Failed to close poll");
+        toast.error(error.error || "Failed to close poll", { id: `close-${pollId}` });
       }
     } catch (error) {
       console.error("Error closing poll:", error);
-      alert("Failed to close poll");
+      toast.error("Failed to close poll", { id: `close-${pollId}` });
     } finally {
       setClosingPollId(null);
     }
@@ -109,21 +112,23 @@ export default function AdminPollsPage() {
     }
 
     setDeletingPollId(pollId);
+    toast.loading("Deleting poll...", { id: `delete-${pollId}` });
+
     try {
       const response = await fetch(`/api/polls/${pollId}`, {
         method: "DELETE",
       });
 
       if (response.ok) {
-        alert("Poll deleted successfully");
+        toast.success("Poll deleted successfully", { id: `delete-${pollId}` });
         fetchPolls();
       } else {
         const error = await response.json();
-        alert(error.error || "Failed to delete poll");
+        toast.error(error.error || "Failed to delete poll", { id: `delete-${pollId}` });
       }
     } catch (error) {
       console.error("Error deleting poll:", error);
-      alert("Failed to delete poll");
+      toast.error("Failed to delete poll", { id: `delete-${pollId}` });
     } finally {
       setDeletingPollId(null);
     }
