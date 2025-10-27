@@ -56,8 +56,10 @@ export default function NewDiscussion() {
       try {
         const response = await fetch('/api/admin/books');
         if (response.ok) {
-          const booksData = await response.json();
-          setBooks(booksData);
+          const data = await response.json();
+          // Handle both { books: [...] } and [...] response formats
+          const booksArray = Array.isArray(data) ? data : (data.books || []);
+          setBooks(booksArray);
         } else {
           toast.error('Failed to fetch books');
         }

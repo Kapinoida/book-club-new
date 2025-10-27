@@ -65,8 +65,10 @@ export default function EditDiscussion({ params }: EditDiscussionProps) {
         // Fetch books
         const booksResponse = await fetch('/api/admin/books');
         if (booksResponse.ok) {
-          const booksData = await booksResponse.json();
-          setBooks(booksData);
+          const data = await booksResponse.json();
+          // Handle both { books: [...] } and [...] response formats
+          const booksArray = Array.isArray(data) ? data : (data.books || []);
+          setBooks(booksArray);
         } else {
           toast.error('Failed to fetch books');
         }
