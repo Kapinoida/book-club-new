@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { MemberGuard } from "@/components/auth/member-guard";
+import { CommentThread } from "@/components/discussions/comment-thread";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { ArrowLeft, MessageCircle, User, Clock, Lock } from "lucide-react";
@@ -125,7 +126,7 @@ export default function DiscussionPage({ params }: DiscussionPageProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newResponse.trim() || isSubmitting) return;
-    
+
     setIsSubmitting(true);
     try {
       const response = await fetch(`/api/discussions/${params.discussionId}/responses`, {
@@ -135,7 +136,7 @@ export default function DiscussionPage({ params }: DiscussionPageProps) {
         },
         body: JSON.stringify({ content: newResponse }),
       });
-      
+
       if (response.ok) {
         const newResponseData = await response.json();
         setResponses(prev => [...prev, newResponseData]);
@@ -147,6 +148,33 @@ export default function DiscussionPage({ params }: DiscussionPageProps) {
       console.error("Error submitting response:", error);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Handle reply to a comment
+  const handleReply = async (parentId: string, content: string) => {
+    try {
+      const response = await fetch(`/api/discussions/${params.discussionId}/responses`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ content, parentId }),
+      });
+
+      if (response.ok) {
+        // Refetch all responses to get updated tree structure
+        const refreshResponse = await fetch(`/api/discussions/${params.discussionId}/responses`);
+        if (refreshResponse.ok) {
+          const data = await refreshResponse.json();
+          setResponses(data);
+        }
+      } else {
+        console.error("Failed to submit reply");
+      }
+    } catch (error) {
+      console.error("Error submitting reply:", error);
+      throw error;
     }
   };
 
@@ -265,41 +293,14 @@ export default function DiscussionPage({ params }: DiscussionPageProps) {
               </CardContent>
             </Card>
           ) : responses.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {responses.map((response) => (
-                <Card key={response.id}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                          <User className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{response.author.name}</p>
-                          <div className="flex items-center space-x-1 text-sm text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            <span>
-                              {new Date(response.created_at).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                hour: 'numeric',
-                                minute: '2-digit'
-                              })}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      {session?.user?.email === response.author.email && (
-                        <Button variant="ghost" size="sm">
-                          Edit
-                        </Button>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="leading-relaxed">{response.content}</p>
-                  </CardContent>
-                </Card>
+                <CommentThread
+                  key={response.id}
+                  comment={response}
+                  currentUserEmail={session?.user?.email}
+                  onReply={handleReply}
+                />
               ))}
             </div>
           ) : (

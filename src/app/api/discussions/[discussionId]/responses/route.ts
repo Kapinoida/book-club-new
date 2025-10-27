@@ -17,13 +17,27 @@ export async function POST(
       );
     }
 
-    const { content } = await request.json();
-    
+    const { content, parentId } = await request.json();
+
     if (!content || content.trim().length === 0) {
       return NextResponse.json(
         { error: "Response content is required" },
         { status: 400 }
       );
+    }
+
+    // If parentId is provided, verify the parent comment exists
+    if (parentId) {
+      const parentComment = await prisma.comment.findUnique({
+        where: { id: parentId }
+      });
+
+      if (!parentComment) {
+        return NextResponse.json(
+          { error: "Parent comment not found" },
+          { status: 404 }
+        );
+      }
     }
 
     // Find user by email
@@ -57,6 +71,7 @@ export async function POST(
         userId: user.id,
         bookId: discussionQuestion.bookId,
         questionId: params.discussionId,
+        parentId: parentId || null,
       },
       include: {
         user: {
@@ -72,11 +87,13 @@ export async function POST(
     const response = {
       id: newComment.id,
       content: newComment.content,
+      parentId: newComment.parentId,
       author: {
         name: newComment.user.name || "Anonymous",
         email: newComment.user.email || ""
       },
-      created_at: newComment.created_at.toISOString()
+      created_at: newComment.created_at.toISOString(),
+      replies: []
     };
 
     return NextResponse.json(response, { status: 201 });
@@ -94,30 +111,71 @@ export async function GET(
   { params }: { params: { discussionId: string } }
 ) {
   try {
-    // Get comments for this discussion question
+    // Get all comments for this discussion question with nested replies
     const comments = await prisma.comment.findMany({
-      where: { questionId: params.discussionId },
+      where: {
+        questionId: params.discussionId,
+        parentId: null // Only get top-level comments
+      },
       include: {
         user: {
           select: {
             name: true,
             email: true
           }
+        },
+        replies: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                email: true
+              }
+            },
+            replies: {
+              include: {
+                user: {
+                  select: {
+                    name: true,
+                    email: true
+                  }
+                },
+                replies: {
+                  include: {
+                    user: {
+                      select: {
+                        name: true,
+                        email: true
+                      }
+                    }
+                  },
+                  orderBy: { created_at: 'asc' }
+                }
+              },
+              orderBy: { created_at: 'asc' }
+            }
+          },
+          orderBy: { created_at: 'asc' }
         }
       },
       orderBy: { created_at: 'asc' }
     });
 
-    // Format responses to match frontend expectations
-    const responses = comments.map(comment => ({
+    // Recursive function to format comments and their replies
+    const formatComment = (comment: any): any => ({
       id: comment.id,
       content: comment.content,
+      parentId: comment.parentId,
       author: {
         name: comment.user.name || "Anonymous",
         email: comment.user.email || ""
       },
-      created_at: comment.created_at.toISOString()
-    }));
+      created_at: comment.created_at.toISOString(),
+      replies: comment.replies ? comment.replies.map(formatComment) : []
+    });
+
+    // Format responses to match frontend expectations
+    const responses = comments.map(formatComment);
 
     return NextResponse.json(responses);
   } catch (error) {
