@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/reviews/star-rating";
+import { ReadingStats } from "@/components/charts/reading-stats";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -178,63 +179,16 @@ export default function ProfilePage() {
       </Card>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <BookOpen className="h-4 w-4" />
-              <CardDescription>Books Started</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">
-              {profileData.stats.booksStarted}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <CheckCircle className="h-4 w-4" />
-              <CardDescription>Books Finished</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">
-              {profileData.stats.booksFinished}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Star className="h-4 w-4" />
-              <CardDescription>Reviews Written</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">
-              {profileData.stats.reviewsWritten}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <MessageCircle className="h-4 w-4" />
-              <CardDescription>Comments Posted</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">
-              {profileData.stats.commentsPosted}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <ReadingStats
+        totalBooks={profileData.stats.booksStarted}
+        booksFinished={profileData.stats.booksFinished}
+        currentStreak={0}
+        averageProgress={
+          profileData.currentBooks.length > 0
+            ? profileData.currentBooks.reduce((acc, book) => acc + book.progress, 0) / profileData.currentBooks.length
+            : 0
+        }
+      />
 
       {/* Currently Reading */}
       {profileData.currentBooks.length > 0 && (

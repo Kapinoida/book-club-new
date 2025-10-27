@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { CircularProgress } from "@/components/charts/circular-progress";
 import { BookOpen, Lock, Unlock, Trophy } from "lucide-react";
 import { toast } from "sonner";
 
@@ -140,6 +141,11 @@ export function ReadingProgress({ bookId, onProgressUpdate }: ReadingProgressPro
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Circular Progress Visualization */}
+        <div className="flex justify-center">
+          <CircularProgress progress={progressData.progress} />
+        </div>
+
         {/* Progress Bar with Milestones */}
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
