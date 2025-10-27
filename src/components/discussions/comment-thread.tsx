@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Reactions } from "@/components/reactions/reactions";
 import { User, Clock, MessageCircle } from "lucide-react";
 import { useState } from "react";
 
@@ -89,7 +90,12 @@ export function CommentThread({
           </div>
         </CardHeader>
         <CardContent>
-          <p className="leading-relaxed mb-3">{comment.content}</p>
+          <p className="leading-relaxed mb-4">{comment.content}</p>
+
+          {/* Reactions */}
+          <div className="mb-3">
+            <Reactions commentId={comment.id} />
+          </div>
 
           {canReply && (
             <div className="flex items-center gap-2">

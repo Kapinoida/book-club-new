@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { StarRating } from "./star-rating";
+import { Reactions } from "@/components/reactions/reactions";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -140,11 +141,14 @@ export function ReviewList({ bookId, currentUserId, refreshTrigger, onEditReview
                     </div>
                   </div>
                 </CardHeader>
-                {review.review && (
-                  <CardContent>
-                    <p className="text-muted-foreground">{review.review}</p>
-                  </CardContent>
-                )}
+                <CardContent>
+                  {review.review && (
+                    <p className="text-muted-foreground mb-4">{review.review}</p>
+                  )}
+
+                  {/* Reactions */}
+                  <Reactions reviewId={review.id} />
+                </CardContent>
               </Card>
             );
           })
