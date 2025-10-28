@@ -6,11 +6,13 @@ interface Poll {
   description: string | null;
   startDate: string;
   endDate: string;
+  forMonth: string;
   isActive: boolean;
   candidates: {
     id: string;
     bookId: string;
     voteCount: number;
+    rank: number | null;
     book: {
       id: string;
       title: string;
@@ -19,9 +21,12 @@ interface Poll {
       description: string | null;
     };
   }[];
-  userVote?: {
+  votes?: {
     bookId: string;
-  } | null;
+  }[];
+  _count: {
+    votes: number;
+  };
 }
 
 export function useActivePolls() {
@@ -85,15 +90,16 @@ export function useVote(pollId: string) {
       // Optimistically update vote
       queryClient.setQueryData<Poll>(["poll", pollId], (old) => {
         if (!old) return old;
+        const previousVote = old.votes?.[0]?.bookId;
         return {
           ...old,
-          userVote: { bookId },
+          votes: [{ bookId }],
           candidates: old.candidates.map((candidate) => ({
             ...candidate,
             voteCount:
               candidate.bookId === bookId
                 ? candidate.voteCount + 1
-                : old.userVote?.bookId === candidate.bookId
+                : previousVote === candidate.bookId
                 ? candidate.voteCount - 1
                 : candidate.voteCount,
           })),

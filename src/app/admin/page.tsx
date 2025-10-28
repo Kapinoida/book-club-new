@@ -1,98 +1,17 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminGuard } from "@/components/admin/admin-guard";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { useAdminStats, useAdminActivity } from "@/hooks/use-admin";
 
-type CommentWithRelations = {
-  id: string;
-  content: string;
-  created_at: Date;
-  user: {
-    name: string | null;
-    username: string | null;
-  };
-  book: {
-    title: string;
-  };
-};
+export default function AdminDashboard() {
+  const { data: stats, isLoading: statsLoading } = useAdminStats();
+  const { data: activity, isLoading: activityLoading } = useAdminActivity();
 
-async function getStats() {
-  try {
-    const [totalBooks, totalUsers, totalComments, totalQuestions] = await Promise.all([
-      prisma.book.count(),
-      prisma.user.count(),
-      prisma.comment.count(),
-      prisma.discussionQuestion.count(),
-    ]);
-
-    return {
-      totalBooks,
-      totalUsers,
-      totalComments,
-      totalQuestions,
-    };
-  } catch (error) {
-    console.error("Error fetching stats:", error);
-    return {
-      totalBooks: 0,
-      totalUsers: 0,
-      totalComments: 0,
-      totalQuestions: 0,
-    };
-  }
-}
-
-async function getRecentActivity() {
-  try {
-    const [recentBooks, recentComments] = await Promise.all([
-      prisma.book.findMany({
-        orderBy: { created_at: 'desc' },
-        take: 5,
-        select: {
-          id: true,
-          title: true,
-          author: true,
-          readMonth: true,
-          status: true,
-          created_at: true,
-        },
-      }),
-      prisma.comment.findMany({
-        orderBy: { created_at: 'desc' },
-        take: 5,
-        include: {
-          user: {
-            select: {
-              name: true,
-              username: true,
-            },
-          },
-          book: {
-            select: {
-              title: true,
-            },
-          },
-        },
-      }),
-    ]);
-
-    return {
-      recentBooks,
-      recentComments: recentComments as CommentWithRelations[],
-    };
-  } catch (error) {
-    console.error("Error fetching recent activity:", error);
-    return {
-      recentBooks: [],
-      recentComments: [] as CommentWithRelations[],
-    };
-  }
-}
-
-export default async function AdminDashboard() {
-  const stats = await getStats();
-  const activity = await getRecentActivity();
+  const isLoading = statsLoading || activityLoading;
 
   return (
     <AdminGuard>
@@ -106,38 +25,55 @@ export default async function AdminDashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Books</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalBooks}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalUsers}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Comments</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalComments}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Discussion Questions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalQuestions}</div>
-            </CardContent>
-          </Card>
+          {isLoading ? (
+            <>
+              {[1, 2, 3, 4].map((i) => (
+                <Card key={i}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <Skeleton className="h-4 w-24" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-8 w-16" />
+                  </CardContent>
+                </Card>
+              ))}
+            </>
+          ) : (
+            <>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Books</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats?.totalBooks ?? 0}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats?.totalUsers ?? 0}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Comments</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats?.totalComments ?? 0}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Discussion Questions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats?.totalQuestions ?? 0}</div>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -147,37 +83,44 @@ export default async function AdminDashboard() {
               <CardTitle>Recent Books</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {activity.recentBooks.length > 0 ? (
-                  activity.recentBooks.map((book) => (
-                    <Link
-                      key={book.id}
-                      href={`/admin/books/${book.id}/edit`}
-                      className="flex justify-between items-center hover:bg-accent/50 p-2 rounded-md transition-colors"
-                    >
-                      <div>
-                        <p className="font-medium">{book.title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          by {book.author}
-                        </p>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {book.readMonth
-                          ? new Date(book.readMonth).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'short'
-                            })
-                          : book.status === 'POLL_CANDIDATE'
-                            ? 'Available for polls'
-                            : 'No date set'
-                        }
-                      </div>
-                    </Link>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">No books added yet</p>
-                )}
-              </div>
+              {isLoading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {activity?.recentBooks && activity.recentBooks.length > 0 ? (
+                    activity.recentBooks.map((book) => (
+                      <Link
+                        key={book.id}
+                        href={`/admin/books/${book.id}/edit`}
+                        className="flex justify-between items-center hover:bg-accent/50 p-2 rounded-md transition-colors"
+                      >
+                        <div>
+                          <p className="font-medium">{book.title}</p>
+                          <p className="text-sm text-muted-foreground">
+                            by {book.author}
+                          </p>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {book.readMonth
+                            ? new Date(book.readMonth).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "short",
+                              })
+                            : book.status === "POLL_CANDIDATE"
+                            ? "Available for polls"
+                            : "No date set"}
+                        </div>
+                      </Link>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No books added yet</p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -187,33 +130,41 @@ export default async function AdminDashboard() {
               <CardTitle>Recent Comments</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {activity.recentComments.length > 0 ? (
-                  activity.recentComments.map((comment) => (
-                    <div key={comment.id}>
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <p className="text-sm">
-                            <span className="font-medium">
-                              {comment.user.name || comment.user.username}
-                            </span>{" "}
-                            commented on{" "}
-                            <span className="font-medium">{comment.book.title}</span>
-                          </p>
-                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                            {comment.content}
-                          </p>
+              {isLoading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {activity?.recentComments && activity.recentComments.length > 0 ? (
+                    activity.recentComments.map((comment) => (
+                      <div key={comment.id}>
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <p className="text-sm">
+                              <span className="font-medium">
+                                {comment.user.name || comment.user.username}
+                              </span>{" "}
+                              commented on{" "}
+                              <span className="font-medium">{comment.book.title}</span>
+                            </p>
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                              {comment.content}
+                            </p>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(comment.created_at).toLocaleDateString()}
+                          </span>
                         </div>
-                        <span className="text-xs text-muted-foreground">
-                          {comment.created_at.toLocaleDateString()}
-                        </span>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">No recent comments</p>
-                )}
-              </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No recent comments</p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
