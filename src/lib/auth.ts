@@ -51,10 +51,25 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
+      // On initial sign in, user object is available
       if (user) {
         token.isAdmin = user.isAdmin ?? false;
       }
+
+      // Refresh admin status from database on every request
+      // This ensures changes to admin status are reflected immediately
+      if (token.email) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: token.email },
+          select: { isAdmin: true }
+        });
+        if (dbUser) {
+          token.isAdmin = dbUser.isAdmin;
+        }
+      }
+
+      console.log("JWT callback - token.isAdmin:", token.isAdmin, "email:", token.email);
       return token;
     },
     async session({ session, token }) {
@@ -62,6 +77,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.sub!;
         session.user.isAdmin = token.isAdmin as boolean;
       }
+      console.log("Session callback - session.user.isAdmin:", session?.user?.isAdmin);
       return session;
     },
   },
