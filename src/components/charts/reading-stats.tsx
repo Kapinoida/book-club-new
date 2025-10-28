@@ -33,7 +33,7 @@ export function ReadingStats({
     },
     {
       title: "Current Streak",
-      value: `${currentStreak} days`,
+      value: `${currentStreak} ${currentStreak === 1 ? 'week' : 'weeks'}`,
       icon: TrendingUp,
       color: "text-green-500",
       bgColor: "bg-green-500/10"

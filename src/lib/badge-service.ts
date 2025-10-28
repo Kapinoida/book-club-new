@@ -16,25 +16,42 @@ export async function checkAndAwardBadges(userId: string): Promise<BadgeCheckRes
 
   const awardedBadgeTypes = new Set(userBadges.map(ub => ub.badge.type));
 
-  // Get user stats
-  const [booksStarted, booksFinished, reviewCount, commentCount, helpfulReactions, insightfulReactions] = await Promise.all([
+  // Get user stats - use simpler queries to avoid connection pool issues
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { currentStreak: true }
+  });
+
+  const [booksStarted, booksFinished, reviewCount, commentCount] = await Promise.all([
     prisma.readingProgress.count({ where: { userId } }),
     prisma.readingProgress.count({ where: { userId, isFinished: true } }),
     prisma.review.count({ where: { userId } }),
-    prisma.comment.count({ where: { userId } }),
+    prisma.comment.count({ where: { userId } })
+  ]);
+
+  // Get reactions received on user's comments and reviews
+  const [helpfulReactions, insightfulReactions] = await Promise.all([
     prisma.reaction.count({
       where: {
-        comment: { userId },
+        OR: [
+          { comment: { userId } },
+          { review: { userId } }
+        ],
         type: "HELPFUL"
       }
     }),
     prisma.reaction.count({
       where: {
-        comment: { userId },
+        OR: [
+          { comment: { userId } },
+          { review: { userId } }
+        ],
         type: "INSIGHTFUL"
       }
     })
   ]);
+
+  const currentStreak = user?.currentStreak || 0;
 
   // Check reading milestones
   if (booksStarted >= 1 && !awardedBadgeTypes.has(BadgeType.FIRST_BOOK)) {
@@ -90,6 +107,20 @@ export async function checkAndAwardBadges(userId: string): Promise<BadgeCheckRes
   if (insightfulReactions >= 10 && !awardedBadgeTypes.has(BadgeType.INSIGHTFUL_CONTRIBUTOR)) {
     await awardBadge(userId, BadgeType.INSIGHTFUL_CONTRIBUTOR);
     newBadges.push(BadgeType.INSIGHTFUL_CONTRIBUTOR);
+  }
+
+  // Check streak milestones
+  if (currentStreak >= 4 && !awardedBadgeTypes.has(BadgeType.STREAK_STARTER)) {
+    await awardBadge(userId, BadgeType.STREAK_STARTER);
+    newBadges.push(BadgeType.STREAK_STARTER);
+  }
+  if (currentStreak >= 12 && !awardedBadgeTypes.has(BadgeType.DEDICATED_READER)) {
+    await awardBadge(userId, BadgeType.DEDICATED_READER);
+    newBadges.push(BadgeType.DEDICATED_READER);
+  }
+  if (currentStreak >= 52 && !awardedBadgeTypes.has(BadgeType.READING_CHAMPION)) {
+    await awardBadge(userId, BadgeType.READING_CHAMPION);
+    newBadges.push(BadgeType.READING_CHAMPION);
   }
 
   return { newBadges };

@@ -27,8 +27,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check and award any new badges
-    await checkAndAwardBadges(user.id);
+    // Check and award any new badges (silently fail if connection pool is busy)
+    try {
+      await checkAndAwardBadges(user.id);
+    } catch (badgeError) {
+      console.log("Badge check skipped due to connection pool timeout");
+    }
 
     // Get user's badges
     const userBadges = await prisma.userBadge.findMany({

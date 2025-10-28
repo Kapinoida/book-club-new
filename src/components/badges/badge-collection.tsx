@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { BadgeDisplay } from "./badge-display";
 import { Trophy } from "lucide-react";
+import { toast } from "sonner";
 
 interface Badge {
   id: string;
@@ -17,6 +18,7 @@ interface Badge {
 interface UserBadge {
   id: string;
   awarded_at: string;
+  isPinned: boolean;
   badge: Badge;
 }
 
@@ -39,6 +41,56 @@ export function BadgeCollection() {
       console.error("Error fetching badges:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handlePinBadge = async (userBadgeId: string) => {
+    try {
+      const response = await fetch(`/api/badges/${userBadgeId}/pin`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to pin badge");
+      }
+
+      // Update local state
+      setBadges((prev) =>
+        prev.map((ub) => ({
+          ...ub,
+          isPinned: ub.id === userBadgeId,
+        }))
+      );
+
+      toast.success("Badge pinned! It will appear on your comments and discussions.");
+    } catch (error) {
+      console.error("Error pinning badge:", error);
+      toast.error("Failed to pin badge");
+    }
+  };
+
+  const handleUnpinBadge = async (userBadgeId: string) => {
+    try {
+      const response = await fetch(`/api/badges/${userBadgeId}/pin`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to unpin badge");
+      }
+
+      // Update local state
+      setBadges((prev) =>
+        prev.map((ub) => ({
+          ...ub,
+          isPinned: false,
+        }))
+      );
+
+      toast.success("Badge unpinned");
+    } catch (error) {
+      console.error("Error unpinning badge:", error);
+      toast.error("Failed to unpin badge");
     }
   };
 
@@ -98,9 +150,18 @@ export function BadgeCollection() {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <div className="mb-4 text-sm text-muted-foreground">
+          Click a badge to pin it to your profile and comments
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {badges.map((userBadge) => (
-            <BadgeDisplay key={userBadge.id} userBadge={userBadge} size="md" />
+            <BadgeDisplay
+              key={userBadge.id}
+              userBadge={userBadge}
+              size="md"
+              onPin={handlePinBadge}
+              onUnpin={handleUnpinBadge}
+            />
           ))}
         </div>
       </CardContent>

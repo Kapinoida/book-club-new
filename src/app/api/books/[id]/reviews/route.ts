@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { updateUserStreak } from "@/lib/streak-service";
+import { checkAndAwardBadges } from "@/lib/badge-service";
 
 const reviewSchema = z.object({
   rating: z.number().min(1).max(5),
@@ -112,6 +114,10 @@ export async function POST(
         },
       },
     });
+
+    // Update user's streak and check for new badges
+    await updateUserStreak(session.user.id);
+    await checkAndAwardBadges(session.user.id);
 
     return NextResponse.json(review);
   } catch (error) {

@@ -24,6 +24,10 @@ import {
   Star,
   MessageCircle,
   Calendar,
+  Edit,
+  MapPin,
+  Globe,
+  Heart,
 } from "lucide-react";
 
 interface Book {
@@ -70,6 +74,10 @@ interface ProfileData {
     email: string | null;
     image: string | null;
     username: string | null;
+    bio: string | null;
+    favoriteGenres: string | null;
+    location: string | null;
+    website: string | null;
     created_at: string;
   };
   stats: {
@@ -77,6 +85,8 @@ interface ProfileData {
     booksFinished: number;
     reviewsWritten: number;
     commentsPosted: number;
+    currentStreak: number;
+    longestStreak: number;
   };
   currentBooks: ReadingProgress[];
   finishedBooks: ReadingProgress[];
@@ -150,40 +160,82 @@ export default function ProfilePage() {
       {/* Profile Header */}
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-4">
-            <Avatar className="h-20 w-20">
-              <AvatarImage src={profileData.user.image || undefined} />
-              <AvatarFallback className="text-2xl">
-                {profileData.user.name?.[0]?.toUpperCase() || "?"}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <CardTitle className="text-3xl">
-                {profileData.user.name || "Anonymous"}
-              </CardTitle>
-              <CardDescription>
-                {profileData.user.username && `@${profileData.user.username}`}
-              </CardDescription>
-              <p className="text-sm text-muted-foreground mt-2">
-                Member since{" "}
-                {new Date(profileData.user.created_at).toLocaleDateString(
-                  "en-US",
-                  {
-                    month: "long",
-                    year: "numeric",
-                  }
-                )}
-              </p>
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-4">
+              <Avatar className="h-20 w-20">
+                <AvatarImage src={profileData.user.image || undefined} />
+                <AvatarFallback className="text-2xl">
+                  {profileData.user.name?.[0]?.toUpperCase() || "?"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="space-y-1">
+                <CardTitle className="text-3xl">
+                  {profileData.user.name || "Anonymous"}
+                </CardTitle>
+                <CardDescription>
+                  {profileData.user.username && `@${profileData.user.username}`}
+                </CardDescription>
+                <p className="text-sm text-muted-foreground">
+                  Member since{" "}
+                  {new Date(profileData.user.created_at).toLocaleDateString(
+                    "en-US",
+                    {
+                      month: "long",
+                      year: "numeric",
+                    }
+                  )}
+                </p>
+              </div>
             </div>
+            <Link href="/profile/edit">
+              <Button variant="outline" size="sm">
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Profile
+              </Button>
+            </Link>
           </div>
         </CardHeader>
+        {(profileData.user.bio || profileData.user.favoriteGenres || profileData.user.location || profileData.user.website) && (
+          <CardContent className="pt-0 space-y-3">
+            {profileData.user.bio && (
+              <p className="text-sm">{profileData.user.bio}</p>
+            )}
+            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+              {profileData.user.favoriteGenres && (
+                <div className="flex items-center gap-1">
+                  <Heart className="h-4 w-4" />
+                  <span>{profileData.user.favoriteGenres}</span>
+                </div>
+              )}
+              {profileData.user.location && (
+                <div className="flex items-center gap-1">
+                  <MapPin className="h-4 w-4" />
+                  <span>{profileData.user.location}</span>
+                </div>
+              )}
+              {profileData.user.website && (
+                <div className="flex items-center gap-1">
+                  <Globe className="h-4 w-4" />
+                  <a
+                    href={profileData.user.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline text-primary"
+                  >
+                    {profileData.user.website.replace(/^https?:\/\//, '')}
+                  </a>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        )}
       </Card>
 
       {/* Stats */}
       <ReadingStats
         totalBooks={profileData.stats.booksStarted}
         booksFinished={profileData.stats.booksFinished}
-        currentStreak={0}
+        currentStreak={profileData.stats.currentStreak}
         averageProgress={
           profileData.currentBooks.length > 0
             ? profileData.currentBooks.reduce((acc, book) => acc + book.progress, 0) / profileData.currentBooks.length

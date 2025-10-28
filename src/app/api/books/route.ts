@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { invalidateCache } from "@/lib/cache";
 
 const createBookSchema = z.object({
   title: z.string().min(1),
@@ -51,6 +52,9 @@ export async function POST(request: NextRequest) {
         readMonth: validatedData.readMonth ? new Date(validatedData.readMonth) : null,
       },
     });
+
+    // Invalidate books cache
+    invalidateCache(['books:.*']);
 
     return NextResponse.json(book);
   } catch (error) {

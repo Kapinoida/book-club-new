@@ -4,12 +4,20 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Reactions } from "@/components/reactions/reactions";
+import { PinnedBadgeIcon } from "@/components/badges/pinned-badge-icon";
 import { User, Clock, MessageCircle } from "lucide-react";
 import { useState } from "react";
+
+interface Badge {
+  icon: string;
+  name: string;
+  color: string;
+}
 
 interface Author {
   name: string;
   email: string;
+  pinnedBadge?: Badge | null;
 }
 
 interface Comment {
@@ -99,7 +107,12 @@ export function CommentThread({
                 <User className="h-4 w-4" />
               </div>
               <div>
-                <p className="font-medium">{comment.author.name}</p>
+                <p className="font-medium flex items-center">
+                  {comment.author.name}
+                  {comment.author.pinnedBadge && (
+                    <PinnedBadgeIcon badge={comment.author.pinnedBadge} size="sm" />
+                  )}
+                </p>
                 <div className="flex items-center space-x-1 text-sm text-muted-foreground">
                   <Clock className="h-3 w-3" />
                   <span>

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { updateUserStreak } from "@/lib/streak-service";
+import { checkAndAwardBadges } from "@/lib/badge-service";
 
 export async function POST(
   request: NextRequest,
@@ -83,6 +85,10 @@ export async function POST(
       }
     });
 
+    // Update user's streak and check for new badges
+    await updateUserStreak(user.id);
+    await checkAndAwardBadges(user.id);
+
     // Format response to match frontend expectations
     const response = {
       id: newComment.id,
@@ -121,7 +127,14 @@ export async function GET(
         user: {
           select: {
             name: true,
-            email: true
+            email: true,
+            badges: {
+              where: { isPinned: true },
+              include: {
+                badge: true
+              },
+              take: 1
+            }
           }
         },
         replies: {
@@ -129,7 +142,14 @@ export async function GET(
             user: {
               select: {
                 name: true,
-                email: true
+                email: true,
+                badges: {
+                  where: { isPinned: true },
+                  include: {
+                    badge: true
+                  },
+                  take: 1
+                }
               }
             },
             replies: {
@@ -137,7 +157,14 @@ export async function GET(
                 user: {
                   select: {
                     name: true,
-                    email: true
+                    email: true,
+                    badges: {
+                      where: { isPinned: true },
+                      include: {
+                        badge: true
+                      },
+                      take: 1
+                    }
                   }
                 },
                 replies: {
@@ -145,7 +172,14 @@ export async function GET(
                     user: {
                       select: {
                         name: true,
-                        email: true
+                        email: true,
+                        badges: {
+                          where: { isPinned: true },
+                          include: {
+                            badge: true
+                          },
+                          take: 1
+                        }
                       }
                     }
                   },
@@ -168,7 +202,8 @@ export async function GET(
       parentId: comment.parentId,
       author: {
         name: comment.user.name || "Anonymous",
-        email: comment.user.email || ""
+        email: comment.user.email || "",
+        pinnedBadge: comment.user.badges?.[0]?.badge || null
       },
       created_at: comment.created_at.toISOString(),
       replies: comment.replies ? comment.replies.map(formatComment) : []

@@ -117,11 +117,11 @@ const badges = [
     tier: 4
   },
 
-  // Streak Badges
+  // Streak Badges (Weekly engagement)
   {
     type: BadgeType.STREAK_STARTER,
     name: "Streak Starter",
-    description: "Maintained a 7-day reading streak",
+    description: "Active for 4 consecutive weeks",
     icon: "🔥",
     color: "#94a3b8",
     tier: 1
@@ -129,7 +129,7 @@ const badges = [
   {
     type: BadgeType.DEDICATED_READER,
     name: "Dedicated Reader",
-    description: "Maintained a 30-day reading streak",
+    description: "Active for 12 consecutive weeks",
     icon: "🔥",
     color: "#f97316",
     tier: 3
@@ -137,7 +137,7 @@ const badges = [
   {
     type: BadgeType.READING_CHAMPION,
     name: "Reading Champion",
-    description: "Maintained a 100-day reading streak",
+    description: "Active for 52 consecutive weeks",
     icon: "🏅",
     color: "#dc2626",
     tier: 4

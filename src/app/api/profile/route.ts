@@ -83,6 +83,8 @@ export async function GET() {
       booksFinished: user.readingProgress.filter((p) => p.isFinished).length,
       reviewsWritten: user.reviews.length,
       commentsPosted: user.comments.length,
+      currentStreak: user.currentStreak,
+      longestStreak: user.longestStreak,
     };
 
     // Organize books by status
@@ -98,6 +100,10 @@ export async function GET() {
         email: user.email,
         image: user.image,
         username: user.username,
+        bio: user.bio,
+        favoriteGenres: user.favoriteGenres,
+        location: user.location,
+        website: user.website,
         created_at: user.created_at,
       },
       stats,

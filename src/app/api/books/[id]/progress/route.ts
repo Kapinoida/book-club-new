@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { updateUserStreak } from "@/lib/streak-service";
+import { checkAndAwardBadges } from "@/lib/badge-service";
 
 export async function GET(
   request: NextRequest,
@@ -132,6 +134,10 @@ export async function POST(
         isFinished: newProgress >= 100
       }
     });
+
+    // Update user's streak and check for new badges
+    await updateUserStreak(user.id);
+    await checkAndAwardBadges(user.id);
 
     // Get unlocked discussions for this book
     const unlockedDiscussions = await getUnlockedDiscussions(bookId, newProgress);

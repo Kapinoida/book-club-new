@@ -57,6 +57,13 @@ model User {
   username       String?   @unique
   password       String?
   isAdmin        Boolean   @default(false)
+  bio            String?   @db.Text // User biography
+  favoriteGenres String?   // Comma-separated list of favorite genres
+  location       String?   // User location (optional)
+  website        String?   // Personal website or social link
+  currentStreak  Int       @default(0) // Current consecutive weeks with activity
+  longestStreak  Int       @default(0) // Longest streak ever achieved
+  lastActiveWeek String?   // ISO week string (e.g., "2024-W42")
   created_at     DateTime  @default(now())
   updated_at     DateTime  @updatedAt
   accounts       Account[]
@@ -115,6 +122,8 @@ model ReadingProgress {
   @@unique([userId, bookId])
   @@index([userId])
   @@index([bookId])
+  @@index([userId, isFinished]) // For filtering user's finished books
+  @@index([isFinished])
   @@map("reading_progress")
 }
 
@@ -153,6 +162,8 @@ model Comment {
   @@index([bookId])
   @@index([questionId])
   @@index([parentId])
+  @@index([questionId, parentId]) // For fetching top-level comments by question
+  @@index([created_at])
   @@map("comments")
 }
 
@@ -291,11 +302,13 @@ model UserBadge {
   userId     String
   badgeId    String
   awarded_at DateTime @default(now())
+  isPinned   Boolean  @default(false) // User can pin one badge to display
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   badge      Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
   @@unique([userId, badgeId])
   @@index([userId])
   @@index([badgeId])
+  @@index([userId, isPinned]) // For quickly finding pinned badges
   @@map("user_badges")
 }

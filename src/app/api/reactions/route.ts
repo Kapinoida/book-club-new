@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { updateUserStreak } from "@/lib/streak-service";
+import { checkAndAwardBadges } from "@/lib/badge-service";
 
 export async function POST(request: NextRequest) {
   try {
@@ -76,6 +78,10 @@ export async function POST(request: NextRequest) {
           type: type
         }
       });
+
+      // Update user's streak (only when adding, not removing)
+      // Note: We don't check badges here to avoid connection pool issues with frequent reactions
+      await updateUserStreak(user.id);
 
       return NextResponse.json({ added: true, reaction: newReaction }, { status: 201 });
     }

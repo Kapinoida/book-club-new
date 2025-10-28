@@ -2,6 +2,8 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge as BadgeUI } from "@/components/ui/badge";
+import { Pin } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface Badge {
   id: string;
@@ -15,15 +17,25 @@ interface Badge {
 interface UserBadge {
   id: string;
   awarded_at: string;
+  isPinned: boolean;
   badge: Badge;
 }
 
 interface BadgeDisplayProps {
   userBadge: UserBadge;
   size?: "sm" | "md" | "lg";
+  onPin?: (userBadgeId: string) => void;
+  onUnpin?: (userBadgeId: string) => void;
+  showPinButton?: boolean;
 }
 
-export function BadgeDisplay({ userBadge, size = "md" }: BadgeDisplayProps) {
+export function BadgeDisplay({
+  userBadge,
+  size = "md",
+  onPin,
+  onUnpin,
+  showPinButton = true
+}: BadgeDisplayProps) {
   const { badge } = userBadge;
 
   const sizeClasses = {
@@ -54,11 +66,29 @@ export function BadgeDisplay({ userBadge, size = "md" }: BadgeDisplayProps) {
     4: "from-purple-400 to-purple-600"  // Platinum
   };
 
+  const handleClick = () => {
+    if (!showPinButton || (!onPin && !onUnpin)) return;
+
+    if (userBadge.isPinned && onUnpin) {
+      onUnpin(userBadge.id);
+    } else if (!userBadge.isPinned && onPin) {
+      onPin(userBadge.id);
+    }
+  };
+
   return (
     <Card
-      className={`relative overflow-hidden ${sizeClasses[size].container}`}
+      className={`relative overflow-hidden ${sizeClasses[size].container} ${
+        showPinButton && (onPin || onUnpin) ? "cursor-pointer hover:shadow-lg transition-shadow" : ""
+      } ${userBadge.isPinned ? "ring-2 ring-primary" : ""}`}
       style={{ borderColor: badge.color }}
+      onClick={handleClick}
     >
+      {userBadge.isPinned && (
+        <div className="absolute top-2 right-2 z-20">
+          <Pin className="h-4 w-4 text-primary fill-primary" />
+        </div>
+      )}
       <div
         className={`absolute inset-0 bg-gradient-to-br ${tierColors[badge.tier as keyof typeof tierColors]} opacity-10`}
       />
