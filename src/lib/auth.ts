@@ -57,9 +57,8 @@ export const authOptions: NextAuthOptions = {
         token.isAdmin = user.isAdmin ?? false;
       }
 
-      // Refresh admin status from database on every request
-      // This ensures changes to admin status are reflected immediately
-      if (token.email) {
+      // Only refresh from database on explicit update trigger
+      if (trigger === "update" && token.email) {
         const dbUser = await prisma.user.findUnique({
           where: { email: token.email },
           select: { isAdmin: true }
@@ -69,7 +68,6 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
-      console.log("JWT callback - token.isAdmin:", token.isAdmin, "email:", token.email);
       return token;
     },
     async session({ session, token }) {
@@ -77,7 +75,6 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.sub!;
         session.user.isAdmin = token.isAdmin as boolean;
       }
-      console.log("Session callback - session.user.isAdmin:", session?.user?.isAdmin);
       return session;
     },
   },
