@@ -298,7 +298,7 @@ export default function DiscussionPage({ params }: DiscussionPageProps) {
                 <CommentThread
                   key={response.id}
                   comment={response}
-                  currentUserEmail={session?.user?.email}
+                  currentUserEmail={session?.user?.email ?? undefined}
                   onReply={handleReply}
                 />
               ))}
