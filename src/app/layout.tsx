@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { SessionProvider } from "@/components/providers/session-provider";
+import { QueryProvider } from "@/components/providers/query-provider";
 import { PageLayout } from "@/components/layout/page-layout";
 import { ErrorBoundary } from "@/components/error/error-boundary";
 import { cn } from "@/lib/utils";
@@ -40,10 +41,12 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <SessionProvider session={session}>
-            <ErrorBoundary>
-              <PageLayout>{children}</PageLayout>
-            </ErrorBoundary>
-            <Toaster />
+            <QueryProvider>
+              <ErrorBoundary>
+                <PageLayout>{children}</PageLayout>
+              </ErrorBoundary>
+              <Toaster />
+            </QueryProvider>
           </SessionProvider>
         </ThemeProvider>
       </body>

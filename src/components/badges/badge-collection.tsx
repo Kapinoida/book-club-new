@@ -1,67 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { BadgeDisplay } from "./badge-display";
 import { Trophy } from "lucide-react";
 import { toast } from "sonner";
-
-interface Badge {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  color: string;
-  tier: number;
-}
-
-interface UserBadge {
-  id: string;
-  awarded_at: string;
-  isPinned: boolean;
-  badge: Badge;
-}
+import { useBadges, usePinBadge, useUnpinBadge } from "@/hooks/use-badges";
 
 export function BadgeCollection() {
-  const [badges, setBadges] = useState<UserBadge[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    fetchBadges();
-  }, []);
-
-  const fetchBadges = async () => {
-    try {
-      const response = await fetch("/api/badges");
-      if (response.ok) {
-        const data = await response.json();
-        setBadges(data);
-      }
-    } catch (error) {
-      console.error("Error fetching badges:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { data: badges, isLoading } = useBadges();
+  const pinBadge = usePinBadge();
+  const unpinBadge = useUnpinBadge();
 
   const handlePinBadge = async (userBadgeId: string) => {
     try {
-      const response = await fetch(`/api/badges/${userBadgeId}/pin`, {
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to pin badge");
-      }
-
-      // Update local state
-      setBadges((prev) =>
-        prev.map((ub) => ({
-          ...ub,
-          isPinned: ub.id === userBadgeId,
-        }))
-      );
-
+      await pinBadge.mutateAsync(userBadgeId);
       toast.success("Badge pinned! It will appear on your comments and discussions.");
     } catch (error) {
       console.error("Error pinning badge:", error);
@@ -71,22 +23,7 @@ export function BadgeCollection() {
 
   const handleUnpinBadge = async (userBadgeId: string) => {
     try {
-      const response = await fetch(`/api/badges/${userBadgeId}/pin`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to unpin badge");
-      }
-
-      // Update local state
-      setBadges((prev) =>
-        prev.map((ub) => ({
-          ...ub,
-          isPinned: false,
-        }))
-      );
-
+      await unpinBadge.mutateAsync(userBadgeId);
       toast.success("Badge unpinned");
     } catch (error) {
       console.error("Error unpinning badge:", error);
@@ -114,7 +51,7 @@ export function BadgeCollection() {
     );
   }
 
-  if (badges.length === 0) {
+  if (!badges || badges.length === 0) {
     return (
       <Card>
         <CardHeader>

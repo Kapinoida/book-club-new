@@ -1,6 +1,7 @@
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+"use client";
+
+import { useSession } from "next-auth/react";
+import { useActivePolls } from "@/hooks/use-polls";
 import { PollsList } from "@/components/polls/polls-list";
 import {
   Card,
@@ -9,64 +10,29 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
-async function getPolls(userId?: string) {
-  try {
-    const polls = await prisma.poll.findMany({
-      include: {
-        candidates: {
-          include: {
-            book: {
-              select: {
-                id: true,
-                title: true,
-                author: true,
-                coverImage: true,
-                description: true,
-              },
-            },
-          },
-          orderBy: {
-            voteCount: "desc",
-          },
-        },
-        votes: userId
-          ? {
-              where: {
-                userId: userId,
-              },
-              select: {
-                bookId: true,
-              },
-            }
-          : false,
-        _count: {
-          select: {
-            votes: true,
-          },
-        },
-      },
-      orderBy: {
-        startDate: "desc",
-      },
-    });
+export default function PollsPage() {
+  const { data: session } = useSession();
+  const { data: polls, isLoading } = useActivePolls();
 
-    // Convert Date objects to ISO strings for client components
-    return polls.map(poll => ({
-      ...poll,
-      startDate: poll.startDate.toISOString(),
-      endDate: poll.endDate.toISOString(),
-      forMonth: poll.forMonth.toISOString(),
-    }));
-  } catch (error) {
-    console.error("Error fetching polls:", error);
-    return [];
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-8 space-y-8">
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-6 w-full max-w-2xl" />
+          </CardHeader>
+        </Card>
+        <div className="grid gap-6">
+          {[1, 2].map((i) => (
+            <Skeleton key={i} className="h-96 w-full" />
+          ))}
+        </div>
+      </div>
+    );
   }
-}
-
-export default async function PollsPage() {
-  const session = await getServerSession(authOptions);
-  const polls = await getPolls(session?.user?.id);
 
   return (
     <div className="container mx-auto py-8 space-y-8">
@@ -80,7 +46,7 @@ export default async function PollsPage() {
         </CardHeader>
       </Card>
 
-      {polls.length === 0 ? (
+      {!polls || polls.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <h3 className="text-xl font-semibold mb-2">No Polls Yet</h3>

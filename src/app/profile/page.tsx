@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
+import { useProfile } from "@/hooks/use-profile";
 import {
   Card,
   CardContent,
@@ -96,32 +97,11 @@ interface ProfileData {
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
-  const [profileData, setProfileData] = useState<ProfileData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: profileData, isLoading, error } = useProfile(status === "authenticated");
 
   useEffect(() => {
     if (status === "unauthenticated") {
       redirect("/signin");
-    }
-  }, [status]);
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await fetch("/api/profile");
-        if (response.ok) {
-          const data = await response.json();
-          setProfileData(data);
-        }
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (status === "authenticated") {
-      fetchProfile();
     }
   }, [status]);
 
