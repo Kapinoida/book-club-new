@@ -57,8 +57,9 @@ export const authOptions: NextAuthOptions = {
         token.isAdmin = user.isAdmin ?? false;
       }
 
-      // Only refresh from database on explicit update trigger
-      if (trigger === "update" && token.email) {
+      // Always refresh isAdmin status from database on every request
+      // This ensures admin status is always up-to-date
+      if (!user && token.email) {
         const dbUser = await prisma.user.findUnique({
           where: { email: token.email },
           select: { isAdmin: true }
