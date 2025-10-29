@@ -40,7 +40,10 @@ export async function GET() {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      return NextResponse.json({
+        error: "Not authenticated",
+        session: session
+      }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
@@ -48,19 +51,23 @@ export async function GET() {
       select: {
         email: true,
         isAdmin: true,
-        name: true
+        name: true,
+        id: true
       }
     });
 
     return NextResponse.json({
       session: {
         email: session.user.email,
-        isAdmin: session.user.isAdmin
+        isAdmin: session.user.isAdmin,
+        id: session.user.id,
+        fullSession: session
       },
-      database: user
+      database: user,
+      note: "If session.isAdmin is false but database.isAdmin is true, you need to sign out and back in"
     });
   } catch (error) {
     console.error("Error checking user status:", error);
-    return NextResponse.json({ error: "Failed to check user" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to check user", details: String(error) }, { status: 500 });
   }
 }
