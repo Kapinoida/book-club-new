@@ -52,18 +52,18 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user, trigger }) {
-      console.log("[JWT Callback] Trigger:", trigger, "HasUser:", !!user, "Email:", token.email);
+      console.log("[JWT Callback] Trigger:", trigger, "HasUser:", !!user, "Email:", token.email, "Current token.isAdmin:", token.isAdmin);
 
       // On initial sign in, user object is available
       if (user) {
-        console.log("[JWT Callback] User.isAdmin:", user.isAdmin);
+        console.log("[JWT Callback] User object provided. User.isAdmin:", user.isAdmin);
         token.isAdmin = user.isAdmin ?? false;
       }
 
-      // Only refresh from database on explicit update trigger
-      // or if isAdmin is not set in the token yet
-      if ((trigger === "update" || token.isAdmin === undefined) && token.email) {
-        console.log("[JWT Callback] Fetching from DB. Current token.isAdmin:", token.isAdmin);
+      // Always refresh from database if isAdmin is not set
+      // This ensures we pick up admin status changes
+      if (token.isAdmin === undefined && token.email) {
+        console.log("[JWT Callback] isAdmin is undefined, fetching from DB");
         try {
           const dbUser = await prisma.user.findUnique({
             where: { email: token.email },
@@ -72,10 +72,13 @@ export const authOptions: NextAuthOptions = {
           if (dbUser) {
             console.log("[JWT Callback] DB User.isAdmin:", dbUser.isAdmin);
             token.isAdmin = dbUser.isAdmin;
+          } else {
+            console.log("[JWT Callback] User not found in database");
+            token.isAdmin = false;
           }
         } catch (error) {
           console.error("[JWT Callback] Error fetching user admin status:", error);
-          // Keep existing token value on error
+          token.isAdmin = false;
         }
       }
 
