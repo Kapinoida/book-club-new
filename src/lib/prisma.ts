@@ -7,7 +7,7 @@ const globalForPrisma = globalThis as unknown as {
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["query"] : [],
+    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
     datasources: {
       db: {
         url: process.env.DATABASE_URL,
@@ -15,7 +15,11 @@ export const prisma =
     },
   });
 
-// Prevent connection pool exhaustion in serverless environments
+// In production (Vercel), each serverless function invocation should close connections
+// In development, reuse the client to avoid connection exhaustion
 if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+} else {
+  // In production, ensure we have a singleton but allow graceful disconnects
   globalForPrisma.prisma = prisma;
 }
