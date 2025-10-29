@@ -25,7 +25,8 @@ export default withAuth(
   {
     callbacks: {
       authorized: ({ token, req }) => {
-        console.log("[Middleware Authorized] Path:", req.nextUrl.pathname, "Token exists:", !!token, "isAdmin:", token?.isAdmin);
+        console.log("[Middleware Authorized] Path:", req.nextUrl.pathname);
+        console.log("[Middleware Authorized] Token:", JSON.stringify(token, null, 2));
 
         // Allow access to public routes
         if (!req.nextUrl.pathname.startsWith("/admin")) {
@@ -34,7 +35,7 @@ export default withAuth(
 
         // For admin routes, check if user is authenticated and is admin
         const isAuthorized = !!token && !!token.isAdmin;
-        console.log("[Middleware Authorized] Admin route - Authorized:", isAuthorized);
+        console.log("[Middleware Authorized] Admin route - Authorized:", isAuthorized, "token.isAdmin:", token?.isAdmin);
         return isAuthorized;
       },
     },
